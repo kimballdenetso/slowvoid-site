@@ -1,0 +1,100 @@
+/* ==========================================================================
+   VISUALIZER3D.CSS
+   Sizes and positions the Three.js canvas for the interaction-driven 3D
+   model. Per the project plan, this model is NOT audio-reactive — it
+   responds to EQ activation (reveal), volume (knob rotation), and cursor
+   position (subtle parallax), all wired up in visualizer3d.js.
+
+   This file stays deliberately light: almost all of the visual richness
+   here comes from the 3D scene itself (Three.js), not CSS. CSS is only
+   responsible for giving that scene a correctly-sized, responsive box to
+   render into.
+
+   Expected markup contract:
+
+   <section class="visualizer3d" aria-hidden="true">
+     <canvas class="visualizer3d__canvas"></canvas>
+   </section>
+
+   aria-hidden is deliberate: the 3D model is decorative/atmospheric, not
+   informational, so it should not be exposed to assistive tech. If a
+   future revision adds meaningful state to it (e.g. it's the only
+   indicator of something), revisit this.
+   ========================================================================== */
+
+.visualizer3d {
+  position: relative;
+  width: 100%;
+  /* Mobile-first: a compact square-ish box so it doesn't push the player
+     below the fold on a phone. responsive.css opens this up at wider
+     breakpoints where there's vertical room to spare. */
+  aspect-ratio: 1 / 1;
+  max-height: 60vh;
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  overflow: hidden;
+}
+
+.visualizer3d__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* The model itself should feel interactive even before anything is
+     wired up — a grab cursor signals "you can move around this" for the
+     cursor-parallax behavior. */
+  cursor: grab;
+}
+
+.visualizer3d__canvas:active {
+  cursor: grabbing;
+}
+
+/* Simple, unobtrusive loading state while the .glb/model + Three.js
+   bundle fetch — visualizer3d.js toggles this class off once the first
+   frame is rendered. Kept as a CSS-only pulse rather than a spinner
+   graphic to avoid pulling in another asset for a transient state. */
+.visualizer3d.is-loading .visualizer3d__canvas {
+  opacity: 0;
+}
+
+.visualizer3d.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 32px;
+  height: 32px;
+  border: var(--border-width) solid var(--color-teal-dark);
+  border-top-color: var(--color-accent);
+  animation: visualizer3d-spin 900ms linear infinite;
+}
+
+@keyframes visualizer3d-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer3d.is-loading::after {
+    animation: none;
+  }
+}
+
+/* Fallback state if WebGL is unavailable or the model fails to load —
+   visualizer3d.js adds this class and inserts a message/still image in
+   place of the canvas rather than leaving a dead box. */
+.visualizer3d.has-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visualizer3d__fallback-message {
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  text-align: center;
+}

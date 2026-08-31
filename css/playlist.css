@@ -1,0 +1,125 @@
+/* ==========================================================================
+   PLAYLIST.CSS
+   Styles the track list — every track in main.js's TRACKS array,
+   selectable to jump straight to any track rather than only prev/next.
+
+   Depends on base.css for tokens. Markup is generated entirely by
+   playlist.js (same pattern as eq.js generating its band sliders) rather
+   than hand-written per track, so adding/removing tracks in main.js's
+   TRACKS array is the only edit needed.
+
+   Expected markup contract (built by playlist.js):
+
+   <section class="playlist" aria-label="Track list">
+     <h3 class="playlist__title">Tracks</h3>
+     <ul class="playlist__list" role="list">
+       <li class="playlist__item">
+         <button class="playlist__track-btn" type="button" aria-current="true">
+           <span class="playlist__track-number">01</span>
+           <span class="playlist__track-info">
+             <span class="playlist__track-title">Celest 01</span>
+             <span class="playlist__track-artist">Celest</span>
+           </span>
+         </button>
+       </li>
+       <!-- one per track -->
+     </ul>
+   </section>
+   ========================================================================== */
+
+.playlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.playlist__title {
+  font-size: var(--fs-md);
+  color: var(--color-text);
+}
+
+.playlist__list {
+  display: flex;
+  flex-direction: column;
+  /* Mobile-first: cap the height and let it scroll rather than pushing
+     comments/everything below it far down the page on a long tracklist. */
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.playlist__item + .playlist__item {
+  border-top: 1px solid var(--color-teal-dark);
+}
+
+.playlist__track-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 44px; /* tap target */
+  padding: var(--space-2) var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.playlist__track-btn:hover {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.playlist__track-btn:focus-visible {
+  outline: var(--border-width) solid var(--color-focus-ring);
+  outline-offset: -2px; /* inset, since the button already spans full width */
+}
+
+.playlist__track-number {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  width: 2ch;
+}
+
+.playlist__track-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* allow ellipsis truncation below to actually work */
+}
+
+.playlist__track-title {
+  font-size: var(--fs-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playlist__track-artist {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-ui);
+}
+
+/* Currently playing/selected track — set via aria-current="true" by
+   playlist.js on every 'trackchange' event, rather than a plain class,
+   so assistive tech gets the same signal sighted users see. */
+.playlist__track-btn[aria-current="true"] {
+  background-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  border-left: var(--border-width) solid var(--color-accent);
+  padding-left: calc(var(--space-2) - var(--border-width));
+}
+
+.playlist__track-btn[aria-current="true"] .playlist__track-number,
+.playlist__track-btn[aria-current="true"] .playlist__track-title {
+  color: var(--color-accent);
+}

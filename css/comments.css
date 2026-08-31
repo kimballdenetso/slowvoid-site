@@ -1,0 +1,285 @@
+/* ==========================================================================
+   COMMENTS.CSS
+   Styles timestamp comment markers on the scrub bar, the comment list,
+   the no-login comment form, and the admin delete view.
+
+   Depends on base.css for tokens and the .btn component.
+
+   Expected markup contract:
+
+   <!-- Markers overlaid on player.js's .player__timeline, positioned via
+        inline style="left: NN%" computed from timestamp / duration -->
+   <div class="comment-marker" style="left: 42%" data-comment-id="17"
+        tabindex="0" role="button"
+        aria-label="Comment from Jordan at 1:24">
+   </div>
+
+   <!-- Comment list, shown below the player -->
+   <section class="comments" aria-label="Track comments">
+     <h3 class="comments__title">Comments</h3>
+
+     <ul class="comments__list">
+       <li class="comment">
+         <span class="comment__timestamp" data-action="seek-to" data-time="84">1:24</span>
+         <span class="comment__name">Jordan</span>
+         <p class="comment__text">This drop hits so hard</p>
+       </li>
+     </ul>
+
+     <form class="comment-form" novalidate>
+       <input type="text" class="comment-form__honeypot" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+       <input type="hidden" name="timestamp" value="84">
+       <div class="comment-form__row">
+         <label class="visually-hidden" for="comment-name">Name</label>
+         <input class="comment-form__input" id="comment-name" name="name" type="text" placeholder="Name" maxlength="80" required>
+       </div>
+       <div class="comment-form__row">
+         <label class="visually-hidden" for="comment-text">Comment</label>
+         <textarea class="comment-form__input comment-form__input--text" id="comment-text" name="comment" placeholder="Leave a comment at 1:24" maxlength="500" required></textarea>
+       </div>
+       <button class="btn btn--accent" type="submit">Post comment</button>
+     </form>
+   </section>
+
+   <!-- Admin view (api/admin.php renders this server-side after login) -->
+   <table class="admin-comments">
+     <tr class="admin-comments__row">
+       <td>1:24</td><td>Jordan</td><td>This drop hits so hard</td>
+       <td><button class="btn btn--accent btn--icon" data-action="delete-comment" data-id="17" aria-label="Delete comment">×</button></td>
+     </tr>
+   </table>
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TIMESTAMP MARKERS ON THE SCRUB BAR
+   Absolutely positioned inside player.js's .player__timeline (left: NN%
+   set inline by comments.js based on timestamp / duration). Sits above
+   the canvas and the transparent range input, but must not block
+   dragging the scrub input itself — small, and pointer-events limited to
+   the marker's own hit area.
+   -------------------------------------------------------------------------- */
+
+.comment-marker {
+  position: absolute;
+  bottom: 2px;
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-accent-strong);
+  border: 1px solid var(--color-slate);
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.comment-marker:hover,
+.comment-marker:focus-visible {
+  background-color: var(--color-off-white);
+}
+
+.comment-marker:focus-visible {
+  outline: var(--border-width) solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   2. COMMENT LIST
+   -------------------------------------------------------------------------- */
+
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.comments__title {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-ui);
+}
+
+.comments__title::before {
+  content: "[ ";
+}
+
+.comments__title::after {
+  content: " ]";
+}
+
+.comments__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* Compact single-line row: "0:12 [Jordan] cool track" — a deliberate
+   departure from a card-per-comment layout, to match the terminal-log
+   aesthetic. Falls back to wrapping (not stacking into a grid) on
+   overflow, which reads fine for a log-style list. */
+.comment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) 0;
+  font-size: var(--fs-sm);
+}
+
+.comment__timestamp {
+  font-size: var(--fs-xs);
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer; /* clicking a timestamp seeks the player to it */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.comment__timestamp:hover,
+.comment__timestamp:focus-visible {
+  color: var(--color-off-white);
+}
+
+/* Rendered with brackets around it in the DOM isn't necessary — done
+   here in CSS via ::before/::after, so comments.js can keep passing the
+   plain name through textContent (safe from injection either way). */
+.comment__name::before {
+  content: "[";
+  color: var(--color-text-muted);
+}
+
+.comment__name::after {
+  content: "]";
+  color: var(--color-text-muted);
+}
+
+.comment__name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.comment__text {
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+/* Only rendered by comments.js for comments the visitor posted THIS
+   session (matched via a sessionStorage-held owner token, never a
+   login) — sized down from the standard 44px .btn since it sits inline
+   in a compact list row rather than being a primary tap target. */
+.comment__delete.btn--icon {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  font-size: var(--fs-sm);
+  align-self: start;
+}
+
+/* Mobile-first: stack name/timestamp/text instead of the grid above once
+   the row gets too cramped. responsive.css can widen this back out. */
+/* Below ~22rem the flex row above already wraps naturally, so no
+   override is needed here (removed the old grid-specific rule that
+   applied when .comment was a CSS grid instead of a flex row). */
+
+/* --------------------------------------------------------------------------
+   3. COMMENT FORM (no login — name + text only)
+   -------------------------------------------------------------------------- */
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-teal-dark);
+}
+
+.comment-form__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Terminal prompt glyph in front of each field, purely decorative. */
+.comment-form__row::before {
+  content: ">";
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.comment-form__input {
+  width: 100%;
+  padding: var(--space-1) 0;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-teal-dark);
+  border-radius: 0;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  min-height: 32px;
+}
+
+.comment-form__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.comment-form__input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--color-accent);
+}
+
+.comment-form__input--text {
+  min-height: 32px;
+  resize: none;
+}
+
+/* Honeypot field — invisible to real visitors, left unfilled; bots that
+   auto-fill every field trip this and comments_post.php silently
+   rejects the submission. Hidden via position/size, not display:none,
+   since some bots skip fields with display:none. */
+.comment-form__honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   4. ADMIN DELETE VIEW (api/admin.php)
+   Deliberately plain/utilitarian — this page is never seen by visitors,
+   just the site owner moderating comments, so it borrows the same
+   tokens but skips any decorative styling.
+   -------------------------------------------------------------------------- */
+
+.admin-comments {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.admin-comments__row {
+  border-bottom: 1px solid var(--color-teal-dark);
+}
+
+.admin-comments td {
+  padding: var(--space-2) var(--space-3);
+  vertical-align: top;
+  color: var(--color-text);
+}
+
+.admin-comments__row:hover {
+  background-color: var(--color-bg-surface);
+}
+
+/* Delete button uses the red .btn--accent variant from base.css — the one
+   place on the site red appears as an interactive color, since deleting
+   is destructive and should read differently from every teal action. */

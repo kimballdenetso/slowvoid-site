@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Slowvoid</title>
+  <meta name="description" content="Official site of Slowvoid — listen to tracks, dig into the mix, and leave a comment right where it hits.">
+
+  <!-- Ubuntu Mono (Google Font) — see css/base.css's font-loading comment
+       for why this lives here instead of an @import in the stylesheet -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Load order matters: chrome.css and responsive.css load LAST so
+       their overrides win over the individual feature stylesheets. -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/player.css">
+  <link rel="stylesheet" href="css/playlist.css">
+  <link rel="stylesheet" href="css/eq.css">
+  <link rel="stylesheet" href="css/comments.css">
+  <link rel="stylesheet" href="css/chrome.css">
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <!-- NOTE: visualizer3d.css / visualizer3d.js are intentionally NOT
+       loaded right now. Per project decision, the device graphic is a
+       static image for this phase — the interactive 3D model (and the
+       importmap it needs for Three.js) is parked for Phase 2. Both
+       files are still in the project, just unused until then. -->
+</head>
+<body>
+
+  <!-- Decorative, aria-hidden vertical text strips (see css/chrome.css) -->
+  <div class="side-text side-text--left" aria-hidden="true">SLOWVOID &nbsp; SLOWVOID &nbsp; SLOWVOID</div>
+  <div class="side-text side-text--right" aria-hidden="true">SLOWVOID &nbsp; SLOWVOID &nbsp; SLOWVOID</div>
+
+  <!-- Shared audio element — no native controls; every control on the
+       page is custom (player.js / eq.js / panner-volume.js) and drives
+       this element directly. main.js swaps its `src` on track change. -->
+  <audio id="track-audio" preload="metadata"></audio>
+
+  <!-- SECTION 1: HEADER — logo + streaming/social link grid -->
+  <header class="site-header">
+    <img class="site-header__logo" src="assets/images/logo.png" alt="Slowvoid">
+    <nav class="site-header__links" aria-label="Listen and follow">
+      <!-- social.js renders one .btn link per platform here -->
+    </nav>
+  </header>
+
+  <!-- SECTION 2: PLAYER PANEL — level meter, device visual, now-playing,
+       volume/pan, EQ, transport + scrubber, playlist -->
+  <main class="container" style="padding-bottom: var(--space-7);">
+
+    <!-- Small standalone level meter (see css/chrome.css .eq-meter —
+         this canvas is the same .eq__visualizer-canvas eq-visualizer.js
+         already draws to; it's just relocated above the device image
+         instead of living inside the .eq panel further down) -->
+    <section class="eq-meter" aria-hidden="true">
+      <canvas class="eq__visualizer-canvas"></canvas>
+    </section>
+
+    <!-- Static device image for now — see index.html's head comment and
+         project-plan.md Section 3.4/7 for the Phase 2 3D plan -->
+    <section class="device-visual" aria-hidden="true">
+      <img class="device-visual__image" src="assets/images/device.png" alt="">
+      <p class="device-visual__flavor-text">
+        Roche limit // decent to SR388 // the aphelion score // threshold shores // solar gravity // object that is me // unreleased //
+      </p>
+    </section>
+
+    <!-- Now playing — player__title/artist are looked up globally by
+         main.js, not scoped to .player, so they're free to live here -->
+    <p class="now-playing">
+      <span class="player__title">Loading…</span>
+      <span class="player__artist">Slowvoid</span>
+    </p>
+
+    <!-- VOL / BAL — also looked up globally (by panner-volume.js), so
+         these can sit here rather than inside .player -->
+    <div class="player__levels" aria-label="Volume and balance">
+      <div class="player__control">
+        <label class="player__control-label" for="volume">Vol</label>
+        <input class="player__range player__range--volume" id="volume" type="range"
+               min="0" max="100" value="80" />
+      </div>
+      <div class="player__control">
+        <label class="player__control-label" for="pan">Bal</label>
+        <input class="player__range player__range--pan" id="pan" type="range"
+               min="-1" max="1" value="0" step="0.01" />
+      </div>
+    </div>
+
+    <!-- EQ (see css/eq.css for the full markup contract — bands are
+         generated into .eq__bands by eq.js, only the reset button's
+         column exists in this markup up front). Standard ISO bands. -->
+    <section class="eq" aria-label="10-band equalizer">
+      <div class="eq__header">
+        <h3 class="eq__title">Equalizer</h3>
+        <button class="btn eq__toggle" data-action="eq-toggle" aria-pressed="false">EQ</button>
+      </div>
+
+      <div class="eq__bands" role="group" aria-label="Frequency bands">
+        <div class="eq__band eq__band--reset">
+          <button class="btn btn--icon" data-action="eq-reset" aria-label="Reset EQ to flat">
+            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYER: transport + scrubber (see css/player.css — title/artist
+         and levels have been pulled out to the sections above, but
+         player.js still finds the buttons/scrub-input/time spans below
+         via a scoped query on this .player element) -->
+    <section class="player" aria-label="Music player">
+      <div class="player__transport-row">
+        <div class="player__transport" role="group" aria-label="Playback controls">
+          <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
+            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM20 4L9 12l11 8z"/></svg>
+          </button>
+          <button class="btn btn--icon" data-action="play" aria-label="Play">
+            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+          </button>
+          <button class="btn btn--icon" data-action="pause" aria-label="Pause" hidden>
+            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+          </button>
+          <button class="btn btn--icon" data-action="stop" aria-label="Stop">
+            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+          <button class="btn btn--icon" data-action="next" aria-label="Next track">
+            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2v16h-2zM4 4l11 8-11 8z"/></svg>
+          </button>
+        </div>
+
+        <div class="player__scrubber">
+          <span class="player__time" data-time="current">0:00</span>
+          <div class="player__timeline">
+            <canvas class="player__timeline-canvas"></canvas>
+            <input
+              class="player__scrub-input"
+              type="range"
+              min="0" max="100" value="0" step="0.1"
+              aria-label="Seek"
+            />
+          </div>
+          <span class="player__time" data-time="total">0:00</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYLIST (see css/playlist.css — bands generated by playlist.js) -->
+    <section class="playlist" aria-label="Track list">
+      <h3 class="playlist__title">Tracks</h3>
+      <ul class="playlist__list" role="list">
+        <!-- playlist.js renders <li class="playlist__item"> items here -->
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- SECTION 3: COMMENTS -->
+  <section class="container comments" aria-label="Track comments">
+    <h3 class="comments__title">Track Comments</h3>
+
+    <ul class="comments__list">
+      <!-- comments.js renders <li class="comment"> items here -->
+    </ul>
+
+    <form class="comment-form" novalidate>
+      <!-- Honeypot: real visitors never see or fill this (hidden via
+           comments.css, not display:none — see that file's comment) -->
+      <input type="text" class="comment-form__honeypot" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input type="hidden" name="timestamp" value="0">
+
+      <div class="comment-form__row">
+        <label class="visually-hidden" for="comment-name">Name</label>
+        <input class="comment-form__input" id="comment-name" name="name" type="text" placeholder="Name" maxlength="80" required>
+      </div>
+      <div class="comment-form__row">
+        <label class="visually-hidden" for="comment-text">Comment</label>
+        <textarea class="comment-form__input comment-form__input--text" id="comment-text" name="comment" placeholder="Enter comment at 0:00_" maxlength="500" required></textarea>
+      </div>
+      <button class="btn btn--accent" type="submit">Post</button>
+    </form>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <span class="site-footer__brand">Slowvoid Music</span>
+    <a href="mailto:booking@slowvoid.com">booking@slowvoid.com</a>
+  </footer>
+
+  <!-- main.js imports player.js, eq.js, eq-visualizer.js, panner-volume.js,
+       playlist.js, and comments.js directly. social.js is fully
+       independent (by design) and loads as its own module. -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/social.js"></script>
+
+</body>
+</html>

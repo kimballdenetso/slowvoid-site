@@ -1,0 +1,154 @@
+/* ==========================================================================
+   MAIN.JS
+   App entry point. Owns:
+     - the track list (single source of truth for titles/artists/audio src)
+     - the shared AudioContext + the master node graph
+     - wiring player.js / eq.js / panner-volume.js together
+     - loading tracks and dispatching 'trackchange'
+
+   Load order in index.html (all as type="module"):
+     <script type="module" src="js/main.js"></script>
+   main.js imports the others directly, so it's the only <script> tag needed.
+
+   Shared node graph (see project-plan.md Section 4):
+     <audio> → MediaElementAudioSourceNode
+             → [10x BiquadFilterNode chain]   (eq.js)
+             → GainNode                        (panner-volume.js, volume)
+             → StereoPannerNode                (panner-volume.js, pan)
+             → AnalyserNode                    (feeds player.js's timing bar + eq-visualizer.js)
+             → AudioContext.destination
+
+   Cross-module events (all dispatched on `document`):
+     'trackchange'    { detail: { trackId, index } }   — fired here in main.js
+     'volumechange'   { detail: { value } }             — fired by panner-volume.js
+     'eqactivated'    (no detail)                       — fired by eq.js
+     'eqdeactivated'  (no detail)                       — fired by eq.js
+   These are the only channel visualizer3d.js and comments.js need to hook
+   into the audio/player state — neither of them touches the audio graph.
+   ========================================================================== */
+
+import { initPlayer } from './player.js';
+import { initEQ } from './eq.js';
+import { initEQVisualizer } from './eq-visualizer.js';
+import { initPannerVolume } from './panner-volume.js';
+import { initPlaylist } from './playlist.js';
+import './comments.js'; // self-initializing: wires its own DOM listeners on import
+
+/* --------------------------------------------------------------------------
+   TRACK LIST
+   Add/reorder tracks here. Audio files live in /assets/audio/.
+   -------------------------------------------------------------------------- */
+const TRACKS = [
+  { id: 'celest-01', title: 'Celest 01', artist: 'Celest', src: 'assets/audio/Celest_01.mp3' },
+  { id: 'celest-02', title: 'Celest 02', artist: 'Celest', src: 'assets/audio/Celest_02.mp3' },
+  { id: 'celest-03', title: 'Celest 03', artist: 'Celest', src: 'assets/audio/Celest_03.mp3' },
+  { id: 'celest-04', title: 'Celest 04', artist: 'Celest', src: 'assets/audio/Celest_04.mp3' },
+  { id: 'celest-05', title: 'Celest 05', artist: 'Celest', src: 'assets/audio/Celest_05.mp3' },
+];
+
+let audioContext;
+let currentTrackIndex = 0;
+const audioEl = document.getElementById('track-audio');
+
+/**
+ * Builds the AudioContext and the full node graph once, wiring in the
+ * EQ chain and the volume/pan chain built by their own modules.
+ * Returns the pieces other modules need (the analyser, the eq filters).
+ */
+function buildAudioGraph() {
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const sourceNode = audioContext.createMediaElementSource(audioEl);
+
+  const analyserNode = audioContext.createAnalyser();
+  analyserNode.fftSize = 2048;
+
+  const eq = initEQ(audioContext);
+  const levels = initPannerVolume(audioContext);
+
+  sourceNode.connect(eq.inputNode);
+  eq.outputNode.connect(levels.inputNode);
+  levels.outputNode.connect(analyserNode);
+  analyserNode.connect(audioContext.destination);
+
+  return { analyserNode, eq, levels };
+}
+
+/**
+ * Swaps the <audio> element's source and updates the title/artist text.
+ * Does NOT auto-play — browsers require a user gesture to start audio,
+ * and the person may be mid-way through arranging things before playing.
+ */
+function loadTrack(index, { autoplay = false } = {}) {
+  const track = TRACKS[index];
+  const wasPlaying = !audioEl.paused;
+
+  audioEl.src = track.src;
+  document.querySelector('.player__title').textContent = track.title;
+  document.querySelector('.player__artist').textContent = track.artist;
+
+  document.dispatchEvent(
+    new CustomEvent('trackchange', { detail: { trackId: track.id, index } })
+  );
+
+  if (autoplay || wasPlaying) {
+    audioEl.play().catch(() => {
+      /* Autoplay was blocked — the transport UI still reflects paused
+         state correctly since player.js listens to the audio element's
+         own 'pause' event, so nothing else needs to happen here. */
+    });
+  }
+}
+
+/**
+ * Most browsers require a user gesture before an AudioContext can
+ * produce sound. We build the graph on load (so nodes exist and can be
+ * wired to the UI immediately) but explicitly resume the context on the
+ * first interaction anywhere on the page.
+ */
+function resumeAudioContextOnce() {
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+  document.removeEventListener('pointerdown', resumeAudioContextOnce);
+  document.removeEventListener('keydown', resumeAudioContextOnce);
+}
+
+/**
+ * Single source of truth for "switch to this track" — used by
+ * player.js (prev/next/ended-auto-advance) and playlist.js (clicking a
+ * track in the list). Keeping this in one place means both can never
+ * fall out of sync with each other or with currentTrackIndex.
+ */
+function selectTrack(index) {
+  currentTrackIndex = index;
+  loadTrack(index, { autoplay: true });
+}
+
+function init() {
+  const graph = buildAudioGraph();
+
+  initPlayer({
+    audioEl,
+    analyserNode: graph.analyserNode,
+    tracks: TRACKS,
+    getCurrentIndex: () => currentTrackIndex,
+    setCurrentIndex: selectTrack,
+  });
+
+  initPlaylist({
+    tracks: TRACKS,
+    setCurrentIndex: selectTrack,
+  });
+
+  const eqCanvas = document.querySelector('.eq__visualizer-canvas');
+  if (eqCanvas) {
+    initEQVisualizer(eqCanvas, graph.eq.filters);
+  }
+
+  loadTrack(currentTrackIndex);
+
+  document.addEventListener('pointerdown', resumeAudioContextOnce);
+  document.addEventListener('keydown', resumeAudioContextOnce);
+}
+
+document.addEventListener('DOMContentLoaded', init);

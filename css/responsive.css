@@ -1,0 +1,120 @@
+/* ==========================================================================
+   RESPONSIVE.CSS
+   Breakpoint overrides only. Every feature stylesheet is written
+   mobile-first as a single stacked column — this file is the ONLY place
+   that adjusts things for tablet/desktop. The page stays single-column
+   at every size (per the design), this just gives elements more room to
+   breathe once there's width to spare. Load this file LAST.
+
+   Breakpoints (documented as custom properties in base.css, repeated
+   here as literal values since @media can't read var()):
+     --bp-tablet:  48rem (768px)
+     --bp-desktop: 64rem (1024px)
+     --bp-wide:    80rem (1280px)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. PAGE-LEVEL
+   Caps the single column's width once there's more room than a phone
+   screen, so lines of text and controls don't stretch uncomfortably wide.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 48rem) {
+  .container {
+    max-width: 32rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. PLAYER
+   Tablet+: transport and scrubber get more breathing room and align on
+   one confident row (mobile already allows wrapping; this just gives it
+   enough width that wrapping stops happening in practice).
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 48rem) {
+  .player {
+    padding: var(--space-5);
+    gap: var(--space-6);
+  }
+
+  .player__transport-row {
+    flex-wrap: nowrap;
+  }
+
+  .player__levels {
+    flex-direction: row;
+    gap: var(--space-6);
+  }
+
+  .player__control {
+    flex: 1 1 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. EQUALIZER
+   Tablet+: enough width to show all ten bands without horizontal
+   scrolling, so the scroll-snap behavior is switched off.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 48rem) {
+  .eq__bands {
+    overflow-x: visible;
+    scroll-snap-type: none;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 64rem) {
+  .eq__slider {
+    height: 180px;
+  }
+
+  .eq__band:not(.eq__band--reset)::after {
+    top: calc(1.2em + var(--space-2) + 90px - 0.5px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. COMMENTS
+   Tablet+: form fields sit side by side instead of stacking, and the
+   list gets a bit more vertical room.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 48rem) {
+  .comments__list {
+    max-height: 420px;
+  }
+
+  .comment-form {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .comment-form__row {
+    flex: 1 1 200px;
+  }
+
+  .comment-form__row:has(.comment-form__input--text) {
+    flex: 1 1 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. SITE CHROME
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 48rem) {
+  .site-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .side-text {
+    width: 28px;
+    font-size: var(--fs-base);
+  }
+}

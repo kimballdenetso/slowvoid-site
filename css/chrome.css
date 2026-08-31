@@ -1,0 +1,223 @@
+/* ==========================================================================
+   CHROME.CSS
+   Page-level chrome that isn't a single feature: the header (logo +
+   streaming/social link grid), the two fixed vertical "SLOWVOID" side
+   strips, the static device-visual placeholder, the small standalone EQ
+   level-meter, and the footer. Also carries the small "now playing"
+   readout and the terminal/bracket restyle applied on top of comments.css.
+
+   Depends on base.css for tokens. Mobile-first throughout — this is the
+   layout the mockup shows, and it already IS the mobile layout, so there
+   are no breakpoint overrides needed here (responsive.css still governs
+   the two-column desktop enhancement for .page-layout).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. HEADER: logo + link grid
+   -------------------------------------------------------------------------- */
+
+.site-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-4) var(--space-5);
+}
+
+.site-header__logo {
+  max-width: 280px;
+  width: 100%;
+  height: auto;
+}
+
+.site-header__links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Rendered by social.js as plain .btn elements with text labels (not the
+   icon-only variant from before) — reuses the standard button component
+   from base.css rather than introducing new button styling here. */
+.site-header__links .btn {
+  font-size: var(--fs-xs);
+}
+
+/* --------------------------------------------------------------------------
+   2. VERTICAL SIDE TEXT
+   Decorative, aria-hidden. Fixed to the viewport edges so it holds its
+   position while the page scrolls, same as the mockup's phone-frame
+   treatment. Narrow enough not to compete with the main content column.
+   -------------------------------------------------------------------------- */
+
+.side-text {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  writing-mode: vertical-rl;
+  color: var(--color-accent-strong);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.3em;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.side-text--left {
+  left: 0;
+}
+
+.side-text--right {
+  right: 0;
+  transform: rotate(180deg); /* mirrors the right strip to read top-to-bottom like the left */
+}
+
+/* Keep the actual page content above the fixed side strips, and give it
+   room on both sides so nothing overlaps on narrow phones. */
+.container,
+.site-header,
+.site-footer {
+  position: relative;
+  z-index: 1;
+  padding-inline: max(var(--container-pad), 28px);
+}
+
+/* --------------------------------------------------------------------------
+   3. STANDALONE EQ LEVEL METER
+   Just the small canvas from eq-visualizer.js, pulled out of the main
+   .eq section (eq.js/main.js query it by class globally, not scoped to
+   .eq, so this works without any JS changes) so it can sit above the
+   device image per the mockup instead of inside the EQ panel itself.
+   -------------------------------------------------------------------------- */
+
+.eq-meter {
+  width: 100%;
+  height: 48px;
+}
+
+.eq-meter .eq__visualizer-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   4. DEVICE VISUAL (static placeholder for now — Phase 2 revisits this
+   as the interactive 3D model, per project-plan.md Section 3.4/7)
+   -------------------------------------------------------------------------- */
+
+.device-visual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.device-visual__image {
+  width: 100%;
+  height: auto;
+  border: var(--border-width) solid var(--color-border);
+}
+
+/* Placeholder look until assets/images/device.png actually exists —
+   remove this rule once a real image is in place; an <img> with a
+   broken src collapses to nothing without it. */
+.device-visual__image {
+  min-height: 160px;
+  background-color: var(--color-bg-surface);
+}
+
+.device-visual__flavor-text {
+  font-size: var(--fs-xs);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-ui);
+}
+
+/* --------------------------------------------------------------------------
+   5. NOW PLAYING READOUT
+   player__title / player__artist are looked up by main.js via a global
+   query (not scoped to .player), so they're free to live here instead
+   of inside the player controls section.
+   -------------------------------------------------------------------------- */
+
+.now-playing {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-ui);
+}
+
+.now-playing .player__title {
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.now-playing .player__artist {
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   6. VOL / BAL — bracketed terminal styling layered on top of the
+   existing .player__levels/.player__range from player.css. The sliders
+   and their behavior are untouched; this only adds the "[----]" framing.
+   -------------------------------------------------------------------------- */
+
+.player__levels {
+  border-top: none; /* replaces player.css's divider — this block now stands alone, not attached under the transport row */
+  padding-top: 0;
+}
+
+.player__control-label::before {
+  content: "[ ";
+}
+
+.player__control-label::after {
+  content: " ]";
+}
+
+/* --------------------------------------------------------------------------
+   7. FOOTER
+   -------------------------------------------------------------------------- */
+
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--ls-ui);
+  text-transform: uppercase;
+}
+
+.site-footer__brand::before {
+  content: "[ ";
+}
+
+.site-footer__brand::after {
+  content: " ]";
+}
+
+.site-footer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--color-accent);
+}

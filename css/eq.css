@@ -1,0 +1,249 @@
+/* ==========================================================================
+   EQ.CSS
+   Styles the 10-band equalizer: the enable/disable toggle, the frequency-
+   response visualizer, and the ten vertical gain sliders.
+
+   Depends on base.css for tokens and the .btn component. No colors or
+   font-families are hardcoded here.
+
+   Expected markup contract (built in index.html, wired up by eq.js and
+   eq-visualizer.js):
+
+   <section class="eq" aria-label="10-band equalizer">
+
+     <div class="eq__header">
+       <h3 class="eq__title">Equalizer</h3>
+       <button class="btn eq__toggle" data-action="eq-toggle" aria-pressed="false">
+         EQ
+       </button>
+     </div>
+
+     <div class="eq__visualizer">
+       <canvas class="eq__visualizer-canvas"></canvas>
+     </div>
+
+     <div class="eq__bands" role="group" aria-label="Frequency bands">
+       <div class="eq__band">
+         <output class="eq__gain-value" for="band-31">0dB</output>
+         <input
+           class="eq__slider" id="band-31" type="range"
+           min="-12" max="12" step="0.5" value="0"
+           aria-orientation="vertical" aria-label="31 Hz gain"
+           data-freq="31"
+         />
+         <span class="eq__freq-label">31</span>
+       </div>
+       <!-- repeat for 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k -->
+
+       <div class="eq__band eq__band--reset">
+         <button class="btn btn--icon" data-action="eq-reset" aria-label="Reset EQ to flat">
+           <svg class="player__icon" aria-hidden="true">...</svg>
+         </button>
+       </div>
+     </div>
+
+   </section>
+
+   NOTE: eq.js dispatches 'eqactivated' / 'eqdeactivated' custom events on
+   toggle (consumed by visualizer3d.js per the project plan) — that's JS
+   wiring, not CSS, but the .eq__toggle element below is what the event
+   fires from.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CONTAINER + HEADER
+   -------------------------------------------------------------------------- */
+
+.eq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.eq__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.eq__title {
+  font-size: var(--fs-md);
+  color: var(--color-text);
+}
+
+/* .eq__toggle is otherwise just a .btn — off by default (outline only),
+   fills solid teal via base.css's [aria-pressed="true"] rule once eq.js
+   flips the attribute on. No extra color rules needed here. */
+.eq__toggle {
+  min-width: 4.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   2. FREQUENCY-RESPONSE VISUALIZER
+   A single canvas spanning the full width, redrawn by eq-visualizer.js
+   whenever a band's gain changes (via getFrequencyResponse() across the
+   filter chain) and/or showing a live spectrum overlay from the shared
+   AnalyserNode. CSS only reserves the box.
+   -------------------------------------------------------------------------- */
+
+.eq__visualizer {
+  position: relative;
+  width: 100%;
+  height: 72px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-teal-dark);
+}
+
+.eq__visualizer-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   3. BAND ROW
+   Mobile-first: ten vertical faders don't comfortably fit a narrow
+   screen at a usable tap-target width, so this scrolls horizontally
+   with snap points. responsive.css removes the scroll and shows all
+   ten at once once there's enough width.
+   -------------------------------------------------------------------------- */
+
+.eq__bands {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-2); /* room for scrollbar without clipping */
+}
+
+/* --------------------------------------------------------------------------
+   4. INDIVIDUAL BAND (vertical slider + gain readout + freq label)
+   -------------------------------------------------------------------------- */
+
+.eq__band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  width: 2.75rem; /* >= 44px tap-target width per band column */
+  scroll-snap-align: start;
+}
+
+.eq__gain-value {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  min-height: 1.2em; /* stable layout whether showing "0dB" or "-12dB" */
+}
+
+.eq__freq-label {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   5. VERTICAL RANGE INPUT
+   Built with writing-mode rather than the deprecated/WebKit-only
+   `orient="vertical"` attribute, so it behaves consistently across
+   browsers. direction: rtl keeps the minimum (-12dB) at the bottom and
+   the maximum (+12dB) at the top, which matches how a physical EQ
+   fader reads.
+   -------------------------------------------------------------------------- */
+
+.eq__slider {
+  appearance: none;
+  -webkit-appearance: slider-vertical; /* legacy WebKit fallback */
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 44px;   /* tap target */
+  height: 140px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.eq__slider::-webkit-slider-runnable-track {
+  width: 4px;
+  background-color: var(--color-teal-dark);
+  border: 1px solid var(--color-border);
+}
+
+.eq__slider::-moz-range-track {
+  width: 4px;
+  background-color: var(--color-teal-dark);
+  border: 1px solid var(--color-border);
+}
+
+.eq__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 12px;
+  background-color: var(--color-accent);
+  border-radius: var(--radius);
+  cursor: grab;
+}
+
+.eq__slider::-moz-range-thumb {
+  width: 20px;
+  height: 12px;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: grab;
+}
+
+.eq__slider:active::-webkit-slider-thumb,
+.eq__slider:active::-moz-range-thumb {
+  cursor: grabbing;
+  background-color: var(--color-off-white);
+}
+
+.eq__slider:focus-visible {
+  outline: var(--border-width) solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Zero-gain reference tick, centered on the track — every band starts
+   flat, so this marks "no change" the same way the pan control marks
+   center. Purely decorative, so it's excluded from the a11y tree. */
+.eq__band {
+  position: relative;
+}
+
+.eq__band:not(.eq__band--reset)::after {
+  content: "";
+  position: absolute;
+  /* vertically centered on the 140px slider track, which sits below
+     the gain readout (see gap/min-height above this element in DOM flow) */
+  top: calc(1.2em + var(--space-2) + 70px - 0.5px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 1px;
+  background-color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. RESET CONTROL
+   Sits at the end of the band row, same column width so it stays inside
+   the scroll-snap rhythm rather than looking bolted on.
+   -------------------------------------------------------------------------- */
+
+.eq__band--reset {
+  justify-content: flex-end;
+  padding-bottom: 2px; /* optical alignment with slider thumbs, not text */
+}
+
+.eq__band--reset::after {
+  content: none; /* no zero-tick on the reset column */
+}
