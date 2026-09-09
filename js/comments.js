@@ -26,12 +26,18 @@ const commentForm = commentsSection.querySelector('.comment-form');
 const nameInput = commentForm.querySelector('#comment-name');
 const textInput = commentForm.querySelector('#comment-text');
 const timestampInput = commentForm.querySelector('input[name="timestamp"]');
+const timestampDisplay = commentForm.querySelector('.comment-form__timestamp');
 const honeypotInput = commentForm.querySelector('.comment-form__honeypot');
 const submitBtn = commentForm.querySelector('button[type="submit"]');
 const timelineEl = document.querySelector('.player__timeline');
 
 let currentTrackId = null;
 let markerElements = []; // kept in sync with rendered comments, for repositioning on resize/metadata
+let comments = []; // kept sorted by timestamp_seconds — see sortComments()
+
+function sortComments(list) {
+  return list.slice().sort((a, b) => a.timestamp_seconds - b.timestamp_seconds);
+}
 
 /* --------------------------------------------------------------------------
    Owner tokens — sessionStorage only. Cleared automatically when the tab
@@ -190,8 +196,10 @@ async function loadComments(trackId) {
     const response = await fetch(`${API_BASE}comments_get.php?track_id=${encodeURIComponent(trackId)}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Could not load comments');
-    renderCommentList(data.comments || []);
+    comments = sortComments(data.comments || []);
+    renderCommentList(comments);
   } catch (err) {
+    comments = [];
     clearComments();
     const li = document.createElement('li');
     li.className = 'comment';
@@ -232,6 +240,7 @@ async function deleteOwnComment(commentId, ownerToken, listItemEl) {
     const marker = timelineEl.querySelector(`.comment-marker[data-comment-id="${commentId}"]`);
     if (marker) marker.remove();
     markerElements = markerElements.filter((m) => m.dataset.commentId !== String(commentId));
+    comments = comments.filter((c) => String(c.id) !== String(commentId));
     removeOwnerToken(commentId);
   } catch (err) {
     window.alert(err.message || 'Could not delete comment.');
@@ -254,19 +263,68 @@ function seekTo(seconds) {
    -------------------------------------------------------------------------- */
 
 let pendingTimestamp = 0;
+let liveMode = true; // ticking with playback while name+comment are both empty
 
 function updatePendingTimestamp(seconds) {
   pendingTimestamp = seconds;
   timestampInput.value = String(seconds);
-  textInput.placeholder = `Leave a comment at ${formatTime(seconds)}`;
+  if (timestampDisplay) timestampDisplay.textContent = formatTime(seconds);
 }
+
+function fieldsAreEmpty() {
+  return !nameInput.value.trim() && !textInput.value.trim();
+}
+
+function refreshLiveMode() {
+  liveMode = fieldsAreEmpty();
+}
+
+/* --------------------------------------------------------------------------
+   Active segment — exactly one of time/name/comment is highlighted
+   (teal fill, black text) at a time: time while both fields are blank,
+   whichever field currently has focus otherwise.
+   -------------------------------------------------------------------------- */
+
+function refreshActiveSegment() {
+  timestampDisplay?.classList.remove('is-active');
+  nameInput.classList.remove('is-active');
+  textInput.classList.remove('is-active');
+
+  const focused = document.activeElement;
+
+  if (fieldsAreEmpty()) {
+    timestampDisplay?.classList.add('is-active');
+  } else if (focused === nameInput) {
+    nameInput.classList.add('is-active');
+  } else if (focused === textInput) {
+    textInput.classList.add('is-active');
+  }
+  // Neither field focused (tabbed/clicked away): no segment highlighted.
+}
+
+[nameInput, textInput].forEach((field) => {
+  field.addEventListener('input', () => {
+    refreshLiveMode();
+    refreshActiveSegment();
+  });
+  field.addEventListener('focus', refreshActiveSegment);
+  field.addEventListener('blur', refreshActiveSegment);
+});
+
+refreshActiveSegment();
+
+audioEl.addEventListener('timeupdate', () => {
+  if (liveMode) updatePendingTimestamp(audioEl.currentTime);
+});
 
 timelineEl.addEventListener('click', (event) => {
   const duration = audioEl.duration;
   if (!duration) return;
   const rect = timelineEl.getBoundingClientRect();
   const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+  liveMode = false;
   updatePendingTimestamp(ratio * duration);
+  refreshActiveSegment();
 });
 
 /* --------------------------------------------------------------------------
@@ -293,13 +351,14 @@ commentForm.addEventListener('submit', async (event) => {
 
     saveOwnerToken(result.comment.id, result.owner_token);
 
-    commentsList.appendChild(renderComment(result.comment));
-    markerElements.push(renderMarker(result.comment));
-    positionMarkers();
+    comments = sortComments([...comments, result.comment]);
+    renderCommentList(comments);
 
     textInput.value = '';
     // Deliberately leave `name` filled in — likely the same visitor
     // will want to comment again on this track without retyping it.
+    refreshLiveMode();
+    refreshActiveSegment();
   } catch (err) {
     window.alert(err.message || 'Could not post comment.');
   } finally {
@@ -313,7 +372,9 @@ commentForm.addEventListener('submit', async (event) => {
 
 document.addEventListener('trackchange', (event) => {
   currentTrackId = event.detail.trackId;
+  liveMode = true;
   updatePendingTimestamp(0);
+  refreshActiveSegment();
   loadComments(currentTrackId);
 });
 

@@ -13,6 +13,285 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
+   0. PAGE SHELL & PANELS
+   The whole page is organized as exactly three stacked panels — header,
+   player, comments — inside one fixed-width column. Mobile-first: the
+   column fills the viewport up to 420px, then stays pinned at 420px on
+   anything wider (tablet/desktop), per the mockup's phone-frame intent.
+   This section only lays out the three panels themselves; it never
+   touches the styling of what's inside them (that stays wherever it
+   already lived — base.css, player.css, eq.css, playlist.css,
+   comments.css).
+   -------------------------------------------------------------------------- */
+
+.page-shell {
+  position: relative;
+  z-index: 1; /* keep above the fixed side-text strips, same as .container/.site-header/.site-footer below */
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  width: min(100%, var(--current-page-width));
+  margin-inline: auto;
+}
+
+.panel {
+  background-color: var(--color-bg-surface);
+  border-radius: var(--panel-radius);
+  overflow: hidden; /* clip children to the rounded corners */
+}
+
+/* Header panel: black box, square top (flush with the viewport edge),
+   rounded only on the bottom two corners. */
+.panel--header {
+  background-color: var(--color-black);
+  border-radius: 0 0 var(--panel-radius) var(--panel-radius);
+}
+
+/* --------------------------------------------------------------------------
+   0.1 PLAYER PANEL — base stage (visualizer + persistent transport)
+   with floating overlay cards for tracklist/EQ/volume/spectrum.
+   -------------------------------------------------------------------------- */
+
+.player-panel-inner {
+  padding: 0; /* the stage itself fills the panel edge-to-edge */
+}
+
+.player-stage {
+  position: relative;
+  width: 100%;
+  min-height: 70vh;
+  overflow: hidden;
+}
+
+/* Visualizer fills the whole stage as the base layer */
+.player-stage .device-visual {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.player-stage .device-visual__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: none;
+}
+
+.player-stage .device-visual__flavor-text {
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: var(--space-3);
+  margin: 0;
+}
+
+/* Persistent playback core — always on top of the visualizer, never
+   hidden by the floating overlays */
+.player-core {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: var(--space-4);
+  background: linear-gradient(to top, color-mix(in srgb, var(--color-bg) 80%, transparent), transparent);
+}
+
+/* Toggle bar for opening/closing the floating overlay cards */
+.player-toggles {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 3;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.player-toggles .panel-toggle {
+  background-color: color-mix(in srgb, var(--color-bg) 55%, transparent);
+}
+
+/* Floating overlay cards: hidden by default, shown via panels.js
+   toggling aria-expanded / .is-open on the trigger button. Each one
+   covers most of the stage without fully hiding the transport core. */
+.floating-panel {
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  top: var(--space-3);
+  bottom: calc(var(--space-3) + 96px); /* clears the player-core height */
+  z-index: 4;
+  overflow-y: auto;
+  padding: var(--space-3);
+  background-color: color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--panel-radius);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+}
+
+.floating-panel.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* Volume/spectrum cards are small controls, not lists — let them size
+   to content instead of filling the whole stage */
+#panel-volume.floating-panel,
+#panel-spectrum.floating-panel {
+  bottom: auto;
+  height: auto;
+  max-height: 40%;
+}
+
+/* --------------------------------------------------------------------------
+   0.2 DESKTOP SIDE PANELS
+   Solid black fill for the viewport gutter once the page snaps to its
+   2x desktop width (see responsive.css, 900px breakpoint, which is the
+   only place these become visible). Deliberately square — no
+   --panel-radius here, unlike the header/player/comments panels.
+   -------------------------------------------------------------------------- */
+
+.side-panel {
+  display: none; /* switched on in responsive.css at the 900px breakpoint */
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: calc((100vw - var(--page-width-desktop)) / 2);
+  background-color: var(--color-black);
+  border-radius: 0;
+  z-index: 0; /* behind .page-shell (1) and the wordmark strips (var(--z-overlay)) */
+  pointer-events: none;
+}
+
+.side-panel--left {
+  left: 0;
+}
+
+.side-panel--right {
+  right: 0;
+}
+
+/* --------------------------------------------------------------------------
+   8. COMMENTS PANEL
+   Overrides on top of comments.css (which we load first — see index.html
+   <head> order — so these rules win without editing that file directly):
+   black background, no border, rounded only on top, a terminal-style
+   time+name+comment prompt (form sits above the list), and an 8-row
+   scrolling cap on the list. Font is Ubuntu Mono 12pt throughout.
+
+   The prompt row has one "active segment" at a time — time, name, or
+   comment — shown with a teal fill + black text; comments.js toggles an
+   .is-active class on whichever element is current. Everything else in
+   the row stays plain teal text, no fill.
+   -------------------------------------------------------------------------- */
+
+.panel--comments {
+  background-color: var(--color-black);
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0; /* top only */
+}
+
+.panel--comments .comments {
+  background-color: transparent;
+  border: none;
+}
+
+.panel--comments .comments,
+.panel--comments .comments__title,
+.panel--comments .comments__list,
+.panel--comments .comments__list .comment,
+.panel--comments .comment__timestamp,
+.panel--comments .comment__name,
+.panel--comments .comment__text,
+.panel--comments .comment-form,
+.panel--comments .comment-form__input,
+.panel--comments .comment-form__timestamp {
+  font-family: var(--font-body);
+  font-size: 12pt;
+}
+
+.panel--comments .comments__title,
+.panel--comments .comment__text {
+  color: var(--color-accent); /* teal, matching the timestamp/name that were already teal */
+}
+
+.panel--comments .comment__name::before,
+.panel--comments .comment__name::after {
+  color: var(--color-accent); /* brackets around the name were hardcoded muted in comments.css */
+}
+
+.comment-form__row--prompt {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+  border: none;
+}
+
+/* The prompt row gets its own time marker instead of the ">" glyph
+   comments.css puts before every .comment-form__row */
+.comment-form__row--prompt::before {
+  content: none;
+}
+
+.comment-form__timestamp {
+  color: var(--color-accent); /* teal, no fill — default/completed state */
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-inline: 2px;
+}
+
+.comment-form__input--name {
+  flex: 0 0 auto;
+  width: 10ch; /* monospace, so this fits exactly the 10-char limit */
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-accent);
+  padding-inline: 2px;
+}
+
+.comment-form__input--prompt {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-accent);
+  padding-inline: 2px;
+}
+
+.comment-form__input--name::placeholder,
+.comment-form__input--prompt::placeholder {
+  color: var(--color-accent); /* all text in this row is teal, including placeholders */
+}
+
+/* Active segment: teal fill, black text — only one of these three is
+   ever active at once, toggled by comments.js. */
+.comment-form__timestamp.is-active,
+.comment-form__input--name.is-active,
+.comment-form__input--prompt.is-active {
+  background-color: var(--color-accent);
+  color: var(--color-black);
+}
+
+.comment-form__input--name.is-active::placeholder,
+.comment-form__input--prompt.is-active::placeholder {
+  color: var(--color-black); /* stay legible against the teal fill */
+}
+
+/* Comment list: cap visible rows to 8, scroll for the rest */
+.comments__list {
+  max-height: calc(8 * var(--comment-row-height));
+  overflow-y: auto;
+}
+
+/* --------------------------------------------------------------------------
    1. HEADER: logo + link grid
    -------------------------------------------------------------------------- */
 
@@ -46,38 +325,53 @@
 }
 
 /* --------------------------------------------------------------------------
-   2. VERTICAL SIDE TEXT
+   2. VERTICAL SIDE WORDMARK
    Decorative, aria-hidden. Fixed to the viewport edges so it holds its
    position while the page scrolls, same as the mockup's phone-frame
    treatment. Narrow enough not to compete with the main content column.
+   Rendered from the <symbol id="slowvoid-mark"> vector defined at the
+   top of index.html (via <use>) rather than live text — no font
+   dependency, no -webkit-text-stroke cross-browser fallback needed.
+   z-index is intentionally the highest in the whole page: this sits on
+   top of the panels AND the floating overlay panels (z-index 4).
    -------------------------------------------------------------------------- */
 
-.side-text {
+.side-text-wrap {
   position: fixed;
   top: 0;
   bottom: 0;
-  width: 20px;
+  width: 100pt; /* matches the mark's own rendered width, so the 60% offset below is measured against the right thing */
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  writing-mode: vertical-rl;
-  color: var(--color-accent-strong);
-  font-family: var(--font-display);
-  font-size: var(--fs-sm);
-  letter-spacing: 0.3em;
-  opacity: 0.5;
+  overflow: visible;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-overlay); /* above .page-shell (1) and .floating-panel (4) — on top of everything */
 }
 
-.side-text--left {
+.side-text-wrap--left {
   left: 0;
+  /* -60% bleeds the strip offscreen to the left, ~40% stays visible.
+     translateY reads from --side-text-parallax, a custom property kept
+     updated by js/parallax.js on scroll — 0px until JS runs, so the
+     strip sits in its static position with no layout shift. */
+  transform: translateX(-60%) translateY(var(--side-text-parallax, 0px));
 }
 
-.side-text--right {
+.side-text-wrap--right {
   right: 0;
-  transform: rotate(180deg); /* mirrors the right strip to read top-to-bottom like the left */
+  transform: translateX(60%) translateY(var(--side-text-parallax, 0px)); /* mirrored bleed to the right */
+}
+
+.side-text {
+  display: block;
+  width: 100pt; /* height follows automatically from the mark's own aspect ratio (99:604) */
+  height: auto;
+  color: var(--color-accent-strong); /* stroke uses currentColor, set here */
+}
+
+.side-text-wrap--right .side-text {
+  transform: rotate(180deg); /* mirrors reading direction independent of the wrap's own positioning transform above */
 }
 
 /* Keep the actual page content above the fixed side strips, and give it
@@ -99,6 +393,7 @@
    -------------------------------------------------------------------------- */
 
 .eq-meter {
+  position: relative;
   width: 100%;
   height: 48px;
 }

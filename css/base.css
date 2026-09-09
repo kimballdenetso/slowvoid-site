@@ -52,11 +52,12 @@
   --color-teal-dark: #2C434D;
   --color-off-white: #DDE1E1;
   --color-slate: #1C1E1F;
+  --color-black: #000000;
 
   /* ---- Semantic color roles (built from the tokens above; feature
      stylesheets should reference these, not the raw brand colors,
      so a future re-theme only touches this block) ---- */
-  --color-bg: var(--color-slate);
+  --color-bg: var(--color-teal-dark); /* page background is dark teal — header panel overrides to black, see chrome.css .panel--header */
   --color-bg-surface: var(--color-teal-dark);
   --color-text: var(--color-off-white);
   --color-text-muted: color-mix(in srgb, var(--color-off-white) 65%, var(--color-slate));
@@ -94,11 +95,30 @@
   --space-7: 3rem;
   --space-8: 4rem;
 
+  /* Height of one compact terminal-log comment row: comments.css gives
+     each <li class="comment"> padding: var(--space-1) 0 (0.5rem total)
+     around a line of text; at 12pt/1.5 line-height that's roughly
+     24px + 8px = 32px. Used to cap the visible list to 8 rows before
+     it scrolls — see chrome.css "COMMENTS PANEL". */
+  --comment-row-height: 2rem;
+
   /* ---- Layout ---- */
   --container-max: 1200px;
   --container-pad: var(--space-4);
   --border-width: 2px;
   --radius: 0; /* brand is hard-edged — no rounded corners anywhere */
+
+  /* ---- Page shell (mobile-first fixed-width layout) ----
+     The whole page is organized as one 420px-wide column, even on
+     desktop — see chrome.css section "PAGE SHELL & PANELS". Unlike
+     --radius above (buttons/images stay hard-edged), the three
+     top-level panels (header/player/comments) get soft corners, so
+     that gets its own token rather than overloading --radius. */
+  --page-width: 420px;
+  --page-width-desktop: 840px; /* 2x snap once there's room — see responsive.css, 900px breakpoint */
+  --current-page-width: var(--page-width); /* responsive.css repoints this at the 900px breakpoint */
+  --panel-gap: 3px;
+  --panel-radius: 10px;
 
   /* ---- Motion ---- */
   --transition-fast: 120ms ease;
@@ -185,9 +205,9 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   line-height: var(--lh-tight);
-  letter-spacing: var(--ls-display);
+  letter-spacing: var(--ls-ui);
   color: var(--color-text);
 }
 
@@ -277,8 +297,9 @@ a:focus-visible {
 }
 
 .btn:hover {
-  border-color: var(--color-off-white);
-  color: var(--color-off-white);
+  background-color: var(--color-teal);
+  border-color: var(--color-teal);
+  color: var(--color-slate);
 }
 
 .btn:active,
@@ -314,8 +335,9 @@ a:focus-visible {
 }
 
 .btn--quiet:hover {
-  border-color: var(--color-off-white);
-  color: var(--color-off-white);
+  background-color: var(--color-teal);
+  border-color: var(--color-teal);
+  color: var(--color-slate);
 }
 
 /* Destructive/emphasis variant — red instead of teal. Reserved for
@@ -328,9 +350,9 @@ a:focus-visible {
 }
 
 .btn--accent:hover {
-  border-color: var(--color-red-dark);
-  color: var(--color-off-white);
-  background-color: color-mix(in srgb, var(--color-accent-strong) 20%, transparent);
+  background-color: var(--color-teal);
+  border-color: var(--color-teal);
+  color: var(--color-slate);
 }
 
 .btn--accent:active,

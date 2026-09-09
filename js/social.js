@@ -13,12 +13,12 @@
    read left-to-right, top-to-bottom.
    -------------------------------------------------------------------------- */
 const SOCIAL_LINKS = [
-  { label: 'Bandcamp', url: 'https://bandcamp.com/' },
-  { label: 'Apple Music', url: 'https://music.apple.com/' },
-  { label: 'Spotify', url: 'https://open.spotify.com/' },
-  { label: 'YouTube', url: 'https://youtube.com/' },
-  { label: 'Insta', url: 'https://instagram.com/' },
-  { label: 'TikTok', url: 'https://tiktok.com/' },
+  { label: 'Bandcamp', url: 'https://slowvoid.bandcamp.com/' },
+  { label: 'Apple Music', url: 'https://music.apple.com/us/artist/slowvoid/1752623015' },
+  { label: 'Spotify', url: 'https://open.spotify.com/artist/5CXomImCpFpNy8RVQM3RQv?si=gCj0vINqRu28lPs3johjZg' },
+  { label: 'YouTube', url: 'https://www.youtube.com/@Slowvoid' },
+  { label: 'Insta', url: 'https://www.instagram.com/slowvoid_music/' },
+  { label: 'TikTok', url: 'https://www.tiktok.com/@slowvoidmusic' },
 ];
 
 function renderSocialLinks() {

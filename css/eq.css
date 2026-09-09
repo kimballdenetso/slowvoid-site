@@ -57,9 +57,9 @@
 .eq {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   width: 100%;
-  padding: var(--space-4);
+  padding: var(--space-3);
   background-color: var(--color-bg-surface);
   border: var(--border-width) solid var(--color-border);
 }
@@ -94,7 +94,7 @@
 .eq__visualizer {
   position: relative;
   width: 100%;
-  height: 72px;
+  height: 48px;
   background-color: var(--color-bg);
   border: 1px solid var(--color-teal-dark);
 }
@@ -116,7 +116,7 @@
 
 .eq__bands {
   display: flex;
-  gap: var(--space-3);
+  /* gap: var(--space-3); */
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
@@ -152,58 +152,109 @@
 
 /* --------------------------------------------------------------------------
    5. VERTICAL RANGE INPUT
-   Built with writing-mode rather than the deprecated/WebKit-only
-   `orient="vertical"` attribute, so it behaves consistently across
-   browsers. direction: rtl keeps the minimum (-12dB) at the bottom and
-   the maximum (+12dB) at the top, which matches how a physical EQ
-   fader reads.
+   Built as a normal HORIZONTAL range input, then rotated with
+   transform — writing-mode-based vertical range inputs render
+   inconsistently across browsers (Safari in particular can fall back to
+   an oversized intrinsic size instead of respecting width/height), which
+   was overlapping and swallowing clicks meant for the transport buttons
+   below it. transform: rotate() has none of that inconsistency, since
+   it's just visual and every browser sizes the box before rotating it.
+
+   .eq__slider-wrap is the fixed-size box you actually see; .eq__slider
+   itself is authored at the WRAP's height x width (i.e. swapped) and
+   then rotated -90deg to stand upright, clipped by the wrap's overflow.
    -------------------------------------------------------------------------- */
 
-.eq__slider {
-  appearance: none;
-  -webkit-appearance: slider-vertical; /* legacy WebKit fallback */
-  writing-mode: vertical-lr;
-  direction: rtl;
-  width: 44px;   /* tap target */
-  height: 140px;
-  margin: 0;
-  background: transparent;
+.eq__slider-wrap {
+  position: relative;
+  width: 44px;    /* tap target, matches the wrap's own footprint */
+  height: 96px;
+  overflow: hidden;
+  /* All pointer interaction is handled here in JS (eq.js), not by the
+     native input's own click/drag handling — see the note on
+     .eq__slider below for why. touch-action: none stops the browser
+     from also trying to scroll/pan while a band is being dragged. */
+  touch-action: none;
   cursor: pointer;
 }
 
+.eq__slider {
+  appearance: none;
+  -webkit-appearance: none;
+  /* Authored pre-rotation: width becomes the visible vertical LENGTH,
+     height becomes the visible vertical THICKNESS — swapped from the
+     wrap's own dimensions on purpose. */
+  width: 96px;
+  height: 44px;
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+  background: transparent;
+  /* Purely visual + a keyboard/ARIA target now. Browsers compute a
+     rotated range input's own click-to-value position using its
+     PRE-rotation layout axis, which in practice several engines get
+     wrong once neighboring bands sit only a few px apart — clicks were
+     registering on the wrong band. pointer-events: none here removes
+     the native input from hit-testing entirely; eq.js listens on
+     .eq__slider-wrap instead and sets .value directly from the pointer
+     position, which is unambiguous regardless of rotation. Arrow-key
+     stepping still works since focus is set programmatically and
+     keyboard input isn't affected by pointer-events. */
+  pointer-events: none;
+  /* Slider value increases left-to-right before rotation; rotate(-90deg)
+     turns that into bottom-to-top, matching how a physical EQ fader
+     reads (max at top). If this ever renders backwards in a browser,
+     flip the sign to rotate(90deg). */
+}
+
 .eq__slider::-webkit-slider-runnable-track {
-  width: 4px;
-  background-color: var(--color-teal-dark);
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent) var(--fill, 50%),
+    var(--color-teal-dark) var(--fill, 50%)
+  );
   border: 1px solid var(--color-border);
 }
 
 .eq__slider::-moz-range-track {
-  width: 4px;
+  height: 4px;
   background-color: var(--color-teal-dark);
   border: 1px solid var(--color-border);
 }
 
+.eq__slider::-moz-range-progress {
+  background-color: var(--color-accent);
+  height: 4px;
+}
+
 .eq__slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 12px;
+  width: 12px;
+  height: 20px;
   background-color: var(--color-accent);
   border-radius: var(--radius);
   cursor: grab;
 }
 
 .eq__slider::-moz-range-thumb {
-  width: 20px;
-  height: 12px;
+  width: 12px;
+  height: 20px;
   background-color: var(--color-accent);
   border: none;
   border-radius: var(--radius);
   cursor: grab;
 }
 
-.eq__slider:active::-webkit-slider-thumb,
-.eq__slider:active::-moz-range-thumb {
+.eq__slider-wrap.is-dragging {
   cursor: grabbing;
+}
+
+.eq__slider-wrap.is-dragging .eq__slider::-webkit-slider-thumb,
+.eq__slider-wrap.is-dragging .eq__slider::-moz-range-thumb {
   background-color: var(--color-off-white);
 }
 
@@ -222,9 +273,9 @@
 .eq__band:not(.eq__band--reset)::after {
   content: "";
   position: absolute;
-  /* vertically centered on the 140px slider track, which sits below
+  /* vertically centered on the 96px slider track, which sits below
      the gain readout (see gap/min-height above this element in DOM flow) */
-  top: calc(1.2em + var(--space-2) + 70px - 0.5px);
+  top: calc(1.2em + var(--space-2) + 48px - 0.5px);
   left: 50%;
   transform: translateX(-50%);
   width: 12px;

@@ -30,171 +30,276 @@
 </head>
 <body>
 
-  <!-- Decorative, aria-hidden vertical text strips (see css/chrome.css) -->
-  <div class="side-text side-text--left" aria-hidden="true">SLOWVOID &nbsp; SLOWVOID &nbsp; SLOWVOID</div>
-  <div class="side-text side-text--right" aria-hidden="true">SLOWVOID &nbsp; SLOWVOID &nbsp; SLOWVOID</div>
+  <!-- Reusable vector wordmark for the two side strips below — defined
+       once, referenced twice via <use>, so we're not depending on the
+       Brevis font or -webkit-text-stroke (the same cross-browser
+       fragility that bit the EQ sliders, per project-plan.md Section 8,
+       shows up with text-stroke on font glyphs too). Pure paths, no
+       font dependency. Stroke color comes from CSS `color` via
+       currentColor — see css/chrome.css .side-text. -->
+  <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+    <symbol id="slowvoid-mark" viewBox="0 0 99 604">
+      <mask id="slowvoid-mark-mask" maskUnits="userSpaceOnUse" x="-0.751282" y="0" width="100" height="604" fill="black">
+        <rect fill="white" x="-0.751282" width="100" height="604"/>
+        <path d="M95.7127 554.826L95.7127 601.77H76.9927L84.2887 550.698L84.3847 550.602C80.5447 548.97 77.6647 550.794 75.7447 555.978L60.5767 596.682C58.7527 601.674 56.3527 603.498 52.8007 602.826L36.7687 589.962L30.5287 585.066L25.4407 543.306H43.7767L38.0167 587.85C41.2807 589.578 43.7767 587.85 45.5047 583.338L59.6167 545.034C61.5367 539.85 65.1847 537.066 68.8327 537.738L86.7847 548.874L95.7127 554.826ZM95.7127 529.895H28.5127V510.215H90.6247L77.1847 475.367H95.7127V529.895ZM79.0087 412.592C74.7847 410.289 70.7527 409.712 67.0087 409.712C51.7447 409.712 43.0087 423.249 42.8167 440.913C42.8167 445.041 43.2967 448.784 44.8327 451.664C49.0567 453.968 53.0887 454.544 56.8327 454.544C72.0967 454.544 80.8327 441.009 81.0247 423.345C81.0247 419.217 80.5447 415.473 79.0087 412.592ZM97.4407 435.536C97.4407 454.257 88.5127 468.849 70.7527 468.849C60.9607 468.849 52.3207 464.337 42.9127 453.297L26.6887 434.193C26.4967 432.369 26.4007 430.545 26.4007 428.721C26.4007 410.001 35.3287 395.409 53.0887 395.409C62.8807 395.409 71.5207 399.921 80.9287 410.961L97.1527 430.065C97.3447 431.889 97.4407 433.712 97.4407 435.536ZM96.6727 359.316C96.6727 376.212 82.8487 387.252 64.6087 387.252C52.3207 387.252 39.8407 384.564 28.5127 377.364V357.3C37.6327 363.636 48.9607 367.188 60.0967 367.188C75.5527 367.188 83.1367 358.74 83.1367 344.532C83.1367 341.652 82.6567 338.868 82.1767 336.756C79.1047 337.524 75.4567 338.004 71.1367 338.004H28.5127L28.5127 318.132H65.9527C77.3767 318.132 88.2247 315.828 90.5287 303.636C84.7687 293.748 73.3447 289.14 59.2327 289.14C48.1927 289.14 37.3447 292.596 28.5127 296.436L28.5127 275.796C34.0807 272.628 42.9127 269.172 52.3207 269.172C72.7687 269.172 86.0167 277.716 93.1207 302.772L97.6327 318.804C95.7127 327.156 92.0647 333.012 84.5767 335.892L96.0967 352.98C96.4807 355.284 96.6727 357.204 96.6727 359.316ZM95.7127 241.32L28.5127 263.592L28.5127 242.184L93.6007 220.584C83.5207 214.344 67.4887 209.064 53.1847 209.064C43.5847 209.064 34.5607 211.368 28.5127 217.416L28.5127 193.896C31.8727 191.304 36.0007 190.152 40.6087 190.152C58.3687 190.152 82.9447 207.144 95.7127 219.624L95.7127 241.32ZM79.0087 131.53C74.7847 129.226 70.7527 128.65 67.0087 128.65C51.7447 128.65 43.0087 142.186 42.8167 159.85C42.8167 163.978 43.2967 167.722 44.8327 170.602C49.0567 172.906 53.0887 173.482 56.8327 173.482C72.0967 173.482 80.8327 159.946 81.0247 142.282C81.0247 138.154 80.5447 134.41 79.0087 131.53ZM97.4407 154.474C97.4407 173.194 88.5127 187.786 70.7527 187.786C60.9607 187.786 52.3207 183.274 42.9127 172.234L26.6887 153.13C26.4967 151.306 26.4007 149.482 26.4007 147.658C26.4007 128.938 35.3287 114.346 53.0887 114.346C62.8807 114.346 71.5207 118.858 80.9287 129.898L97.1527 149.002C97.3447 150.826 97.4407 152.65 97.4407 154.474ZM95.7127 104.27L28.5127 104.27V84.5898L95.7127 84.5898V104.27ZM22.3687 94.4778L12.0967 108.878L1.24872 95.0538L11.5207 80.6538L22.3687 94.4778ZM79.5847 21.352C76.4167 18.952 71.1367 16.84 64.8007 16.84C41.3767 16.84 28.7047 42.952 25.2487 72.04L11.1367 52.168C12.8647 42.376 16.1287 31.528 22.6567 20.488C29.2807 9.06401 39.1687 1 52.0327 1C64.7047 0.999999 75.2647 12.616 81.9847 19.528L97.1527 35.56C97.3447 37.384 97.4407 39.688 97.4407 42.952C97.4407 60.424 87.0727 73.384 70.6567 73.384C56.6407 73.384 42.5287 62.728 38.8807 43.24L40.6087 41.704C44.7367 52.552 53.3767 56.2 61.0567 56.2C71.2327 56.2 81.1207 48.328 81.1207 31.528C81.1207 27.976 80.8327 24.136 79.5847 21.352Z"/>
+      </mask>
+      <path d="M95.7127 554.826L95.7127 601.77H76.9927L84.2887 550.698L84.3847 550.602C80.5447 548.97 77.6647 550.794 75.7447 555.978L60.5767 596.682C58.7527 601.674 56.3527 603.498 52.8007 602.826L36.7687 589.962L30.5287 585.066L25.4407 543.306H43.7767L38.0167 587.85C41.2807 589.578 43.7767 587.85 45.5047 583.338L59.6167 545.034C61.5367 539.85 65.1847 537.066 68.8327 537.738L86.7847 548.874L95.7127 554.826ZM95.7127 529.895H28.5127V510.215H90.6247L77.1847 475.367H95.7127V529.895ZM79.0087 412.592C74.7847 410.289 70.7527 409.712 67.0087 409.712C51.7447 409.712 43.0087 423.249 42.8167 440.913C42.8167 445.041 43.2967 448.784 44.8327 451.664C49.0567 453.968 53.0887 454.544 56.8327 454.544C72.0967 454.544 80.8327 441.009 81.0247 423.345C81.0247 419.217 80.5447 415.473 79.0087 412.592ZM97.4407 435.536C97.4407 454.257 88.5127 468.849 70.7527 468.849C60.9607 468.849 52.3207 464.337 42.9127 453.297L26.6887 434.193C26.4967 432.369 26.4007 430.545 26.4007 428.721C26.4007 410.001 35.3287 395.409 53.0887 395.409C62.8807 395.409 71.5207 399.921 80.9287 410.961L97.1527 430.065C97.3447 431.889 97.4407 433.712 97.4407 435.536ZM96.6727 359.316C96.6727 376.212 82.8487 387.252 64.6087 387.252C52.3207 387.252 39.8407 384.564 28.5127 377.364V357.3C37.6327 363.636 48.9607 367.188 60.0967 367.188C75.5527 367.188 83.1367 358.74 83.1367 344.532C83.1367 341.652 82.6567 338.868 82.1767 336.756C79.1047 337.524 75.4567 338.004 71.1367 338.004H28.5127L28.5127 318.132H65.9527C77.3767 318.132 88.2247 315.828 90.5287 303.636C84.7687 293.748 73.3447 289.14 59.2327 289.14C48.1927 289.14 37.3447 292.596 28.5127 296.436L28.5127 275.796C34.0807 272.628 42.9127 269.172 52.3207 269.172C72.7687 269.172 86.0167 277.716 93.1207 302.772L97.6327 318.804C95.7127 327.156 92.0647 333.012 84.5767 335.892L96.0967 352.98C96.4807 355.284 96.6727 357.204 96.6727 359.316ZM95.7127 241.32L28.5127 263.592L28.5127 242.184L93.6007 220.584C83.5207 214.344 67.4887 209.064 53.1847 209.064C43.5847 209.064 34.5607 211.368 28.5127 217.416L28.5127 193.896C31.8727 191.304 36.0007 190.152 40.6087 190.152C58.3687 190.152 82.9447 207.144 95.7127 219.624L95.7127 241.32ZM79.0087 131.53C74.7847 129.226 70.7527 128.65 67.0087 128.65C51.7447 128.65 43.0087 142.186 42.8167 159.85C42.8167 163.978 43.2967 167.722 44.8327 170.602C49.0567 172.906 53.0887 173.482 56.8327 173.482C72.0967 173.482 80.8327 159.946 81.0247 142.282C81.0247 138.154 80.5447 134.41 79.0087 131.53ZM97.4407 154.474C97.4407 173.194 88.5127 187.786 70.7527 187.786C60.9607 187.786 52.3207 183.274 42.9127 172.234L26.6887 153.13C26.4967 151.306 26.4007 149.482 26.4007 147.658C26.4007 128.938 35.3287 114.346 53.0887 114.346C62.8807 114.346 71.5207 118.858 80.9287 129.898L97.1527 149.002C97.3447 150.826 97.4407 152.65 97.4407 154.474ZM95.7127 104.27L28.5127 104.27V84.5898L95.7127 84.5898V104.27ZM22.3687 94.4778L12.0967 108.878L1.24872 95.0538L11.5207 80.6538L22.3687 94.4778ZM79.5847 21.352C76.4167 18.952 71.1367 16.84 64.8007 16.84C41.3767 16.84 28.7047 42.952 25.2487 72.04L11.1367 52.168C12.8647 42.376 16.1287 31.528 22.6567 20.488C29.2807 9.06401 39.1687 1 52.0327 1C64.7047 0.999999 75.2647 12.616 81.9847 19.528L97.1527 35.56C97.3447 37.384 97.4407 39.688 97.4407 42.952C97.4407 60.424 87.0727 73.384 70.6567 73.384C56.6407 73.384 42.5287 62.728 38.8807 43.24L40.6087 41.704C44.7367 52.552 53.3767 56.2 61.0567 56.2C71.2327 56.2 81.1207 48.328 81.1207 31.528C81.1207 27.976 80.8327 24.136 79.5847 21.352Z" stroke="currentColor" stroke-width="2" mask="url(#slowvoid-mark-mask)"/>
+    </symbol>
+  </svg>
+
+  <!-- Solid black desktop side panels — hidden on mobile, shown once the
+       viewport has room to snap the page to 2x width (see
+       css/responsive.css, 900px breakpoint). Square corners, no radius. -->
+  <div class="side-panel side-panel--left" aria-hidden="true"></div>
+  <div class="side-panel side-panel--right" aria-hidden="true"></div>
+
+  <!-- Decorative, aria-hidden vertical wordmark strips (see
+       css/chrome.css) — now rendered from the vector symbol above
+       instead of live text, and layered on top of the whole page. -->
+  <div class="side-text-wrap side-text-wrap--left" aria-hidden="true">
+    <svg class="side-text" viewBox="0 0 99 604" focusable="false"><use href="#slowvoid-mark"></use></svg>
+  </div>
+  <div class="side-text-wrap side-text-wrap--right" aria-hidden="true">
+    <svg class="side-text" viewBox="0 0 99 604" focusable="false"><use href="#slowvoid-mark"></use></svg>
+  </div>
 
   <!-- Shared audio element — no native controls; every control on the
        page is custom (player.js / eq.js / panner-volume.js) and drives
        this element directly. main.js swaps its `src` on track change. -->
   <audio id="track-audio" preload="metadata"></audio>
 
-  <!-- SECTION 1: HEADER — logo + streaming/social link grid -->
-  <header class="site-header">
-    <img class="site-header__logo" src="assets/images/logo.png" alt="Slowvoid">
-    <nav class="site-header__links" aria-label="Listen and follow">
-      <!-- social.js renders one .btn link per platform here -->
-    </nav>
-  </header>
+  <!-- PAGE SHELL — the three organizing panels (header / player /
+       comments). This is purely structural: every control below is the
+       exact same markup/classes as before, just re-grouped. See
+       css/chrome.css "PAGE SHELL & PANELS" for the 420px-fixed-width,
+       rounded-corner, 3px-gap treatment. -->
+  <div class="page-shell">
 
-  <!-- SECTION 2: PLAYER PANEL — level meter, device visual, now-playing,
-       volume/pan, EQ, transport + scrubber, playlist -->
-  <main class="container" style="padding-bottom: var(--space-7);">
-
-    <!-- Small standalone level meter (see css/chrome.css .eq-meter —
-         this canvas is the same .eq__visualizer-canvas eq-visualizer.js
-         already draws to; it's just relocated above the device image
-         instead of living inside the .eq panel further down) -->
-    <section class="eq-meter" aria-hidden="true">
-      <canvas class="eq__visualizer-canvas"></canvas>
-    </section>
-
-    <!-- Static device image for now — see index.html's head comment and
-         project-plan.md Section 3.4/7 for the Phase 2 3D plan -->
-    <section class="device-visual" aria-hidden="true">
-      <img class="device-visual__image" src="assets/images/device.png" alt="">
-      <p class="device-visual__flavor-text">
-        Roche limit // decent to SR388 // the aphelion score // threshold shores // solar gravity // object that is me // unreleased //
-      </p>
-    </section>
-
-    <!-- Now playing — player__title/artist are looked up globally by
-         main.js, not scoped to .player, so they're free to live here -->
-    <p class="now-playing">
-      <span class="player__title">Loading…</span>
-      <span class="player__artist">Slowvoid</span>
-    </p>
-
-    <!-- VOL / BAL — also looked up globally (by panner-volume.js), so
-         these can sit here rather than inside .player -->
-    <div class="player__levels" aria-label="Volume and balance">
-      <div class="player__control">
-        <label class="player__control-label" for="volume">Vol</label>
-        <input class="player__range player__range--volume" id="volume" type="range"
-               min="0" max="100" value="80" />
-      </div>
-      <div class="player__control">
-        <label class="player__control-label" for="pan">Bal</label>
-        <input class="player__range player__range--pan" id="pan" type="range"
-               min="-1" max="1" value="0" step="0.01" />
-      </div>
+    <!-- PANEL 1: HEADER — logo + streaming/social link grid -->
+    <div class="panel panel--header">
+      <header class="site-header">
+        <img class="site-header__logo" src="assets/images/logo.png" alt="Slowvoid">
+        <nav class="site-header__links" aria-label="Listen and follow">
+          <!-- social.js renders one .btn link per platform here -->
+        </nav>
+      </header>
     </div>
 
-    <!-- EQ (see css/eq.css for the full markup contract — bands are
-         generated into .eq__bands by eq.js, only the reset button's
-         column exists in this markup up front). Standard ISO bands. -->
-    <section class="eq" aria-label="10-band equalizer">
-      <div class="eq__header">
-        <h3 class="eq__title">Equalizer</h3>
-        <button class="btn eq__toggle" data-action="eq-toggle" aria-pressed="false">EQ</button>
-      </div>
+    <!-- PANEL 2: PLAYER — a base "stage" (visualizer + persistent
+         transport) with the track list, EQ, volume/pan, and spectrum
+         meter as floating overlay cards toggled on top of it. -->
+    <div class="panel panel--player">
+      <main class="player-panel-inner">
 
-      <div class="eq__bands" role="group" aria-label="Frequency bands">
-        <div class="eq__band eq__band--reset">
-          <button class="btn btn--icon" data-action="eq-reset" aria-label="Reset EQ to flat">
-            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-          </button>
-        </div>
-      </div>
-    </section>
+        <div class="player-stage">
 
-    <!-- PLAYER: transport + scrubber (see css/player.css — title/artist
-         and levels have been pulled out to the sections above, but
-         player.js still finds the buttons/scrub-input/time spans below
-         via a scoped query on this .player element) -->
-    <section class="player" aria-label="Music player">
-      <div class="player__transport-row">
-        <div class="player__transport" role="group" aria-label="Playback controls">
-          <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
-            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM20 4L9 12l11 8z"/></svg>
-          </button>
-          <button class="btn btn--icon" data-action="play" aria-label="Play">
-            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
-          </button>
-          <button class="btn btn--icon" data-action="pause" aria-label="Pause" hidden>
-            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
-          </button>
-          <button class="btn btn--icon" data-action="stop" aria-label="Stop">
-            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>
-          </button>
-          <button class="btn btn--icon" data-action="next" aria-label="Next track">
-            <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2v16h-2zM4 4l11 8-11 8z"/></svg>
-          </button>
-        </div>
+          <!-- BASE LAYER: static device visual (see project-plan.md
+               Section 3.4/7 for the Phase 2 interactive-3D swap) -->
+          <section class="device-visual" aria-hidden="true">
+            <img class="device-visual__image" src="assets/images/device.png" alt="">
+            <p class="device-visual__flavor-text">
+              Roche limit // decent to SR388 // the aphelion score // threshold shores // solar gravity // object that is me // unreleased //
+            </p>
+          </section>
 
-        <div class="player__scrubber">
-          <span class="player__time" data-time="current">0:00</span>
-          <div class="player__timeline">
-            <canvas class="player__timeline-canvas"></canvas>
-            <input
-              class="player__scrub-input"
-              type="range"
-              min="0" max="100" value="0" step="0.1"
-              aria-label="Seek"
-            />
+          <!-- BASE LAYER: persistent playback core (now-playing +
+               transport/scrubber) — always visible, sits above the
+               visualizer, everything else floats on top of/around it -->
+          <div class="player-core">
+            <!-- Now playing — player__title/artist are looked up
+                 globally by main.js, not scoped to .player -->
+            <p class="now-playing">
+              <span class="player__title">Loading…</span>
+              <span class="player__artist">Slowvoid</span>
+            </p>
+
+            <!-- PLAYER: transport + scrubber (see css/player.css —
+                 player.js finds the buttons/scrub-input/time spans
+                 below via a scoped query on this .player element) -->
+            <section class="player" aria-label="Music player">
+              <div class="player__transport-row">
+                <div class="player__transport" role="group" aria-label="Playback controls">
+                  <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
+                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM20 4L9 12l11 8z"/></svg>
+                  </button>
+                  <button class="btn btn--icon" data-action="play" aria-label="Play">
+                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+                  </button>
+                  <button class="btn btn--icon" data-action="pause" aria-label="Pause" hidden>
+                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                  </button>
+                  <button class="btn btn--icon" data-action="stop" aria-label="Stop">
+                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>
+                  </button>
+                  <button class="btn btn--icon" data-action="next" aria-label="Next track">
+                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2v16h-2zM4 4l11 8-11 8z"/></svg>
+                  </button>
+                </div>
+
+                <div class="player__scrubber">
+                  <span class="player__time" data-time="current">0:00</span>
+                  <div class="player__timeline">
+                    <canvas class="player__timeline-canvas"></canvas>
+                    <input
+                      class="player__scrub-input"
+                      type="range"
+                      min="0" max="100" value="0" step="0.1"
+                      aria-label="Seek"
+                    />
+                  </div>
+                  <span class="player__time" data-time="total">0:00</span>
+                </div>
+              </div>
+            </section>
           </div>
-          <span class="player__time" data-time="total">0:00</span>
+
+          <!-- FLOATING PANEL TOGGLES — opens/closes each overlay card
+               below. Toggle behavior is handled by js/panels.js, which
+               only flips aria-expanded/.is-open — it doesn't touch any
+               audio/player logic. -->
+          <div class="player-toggles" role="group" aria-label="Show panel">
+            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="tracklist" aria-expanded="false" aria-controls="panel-tracklist" aria-label="Toggle track list">
+              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
+            </button>
+            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq" aria-label="Toggle equalizer">
+              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM11 9h2v11h-2zM16 2h2v18h-2z"/></svg>
+            </button>
+            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="volume" aria-expanded="false" aria-controls="panel-volume" aria-label="Toggle volume and balance">
+              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 5V5l-5 5zM17 8l4 4-4 4-1.4-1.4L18.2 12l-2.6-2.6z"/></svg>
+            </button>
+            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum" aria-label="Toggle spectrum analyzer">
+              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h2v6H4zM8 8h2v12H8zM12 3h2v17h-2zM16 10h2v10h-2zM20 6h2v14h-2z"/></svg>
+            </button>
+          </div>
+
+          <!-- FLOATING OVERLAY: track list (see css/playlist.css —
+               items generated by playlist.js) -->
+          <div class="floating-panel" id="panel-tracklist" data-panel="tracklist">
+            <section class="playlist" aria-label="Track list">
+              <h3 class="playlist__title">Tracks</h3>
+              <ul class="playlist__list" role="list">
+                <!-- playlist.js renders <li class="playlist__item"> items here -->
+              </ul>
+            </section>
+          </div>
+
+          <!-- FLOATING OVERLAY: EQ (see css/eq.css for the full markup
+               contract — bands are generated into .eq__bands by eq.js,
+               only the reset button's column exists up front) -->
+          <div class="floating-panel" id="panel-eq" data-panel="eq">
+            <section class="eq" aria-label="10-band equalizer">
+              <div class="eq__header">
+                <h3 class="eq__title">Equalizer</h3>
+                <button class="btn eq__toggle" data-action="eq-toggle" aria-pressed="false">EQ</button>
+              </div>
+
+              <div class="eq__bands" role="group" aria-label="Frequency bands">
+                <div class="eq__band eq__band--reset">
+                  <button class="btn btn--icon" data-action="eq-reset" aria-label="Reset EQ to flat">
+                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- FLOATING OVERLAY: volume / balance — looked up globally
+               (by panner-volume.js), unchanged markup -->
+          <div class="floating-panel" id="panel-volume" data-panel="volume">
+            <div class="player__levels" aria-label="Volume and balance">
+              <div class="player__control">
+                <label class="player__control-label" for="volume">Vol</label>
+                <input class="player__range player__range--volume" id="volume" type="range"
+                       min="0" max="100" value="80" />
+              </div>
+              <div class="player__control">
+                <label class="player__control-label" for="pan">Bal</label>
+                <input class="player__range player__range--pan" id="pan" type="range"
+                       min="-1" max="1" value="0" step="0.01" />
+              </div>
+            </div>
+          </div>
+
+          <!-- FLOATING OVERLAY: spectrum analyzer — same
+               .eq__visualizer-canvas eq-visualizer.js already draws to,
+               just relocated into its own floating card -->
+          <div class="floating-panel" id="panel-spectrum" data-panel="spectrum">
+            <section class="eq-meter" aria-hidden="true">
+              <canvas class="eq__visualizer-canvas"></canvas>
+            </section>
+          </div>
+
         </div>
-      </div>
-    </section>
+      </main>
+    </div>
 
-    <!-- PLAYLIST (see css/playlist.css — bands generated by playlist.js) -->
-    <section class="playlist" aria-label="Track list">
-      <h3 class="playlist__title">Tracks</h3>
-      <ul class="playlist__list" role="list">
-        <!-- playlist.js renders <li class="playlist__item"> items here -->
-      </ul>
-    </section>
+    <!-- PANEL 3: COMMENTS -->
+    <div class="panel panel--comments">
+      <section class="container comments" aria-label="Track comments">
+        <h3 class="comments__title">Track Comments</h3>
 
-  </main>
+        <form class="comment-form" novalidate>
+          <!-- Honeypot: real visitors never see or fill this (hidden via
+               comments.css, not display:none — see that file's comment) -->
+          <input type="text" class="comment-form__honeypot" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <input type="hidden" name="timestamp" value="0">
 
-  <!-- SECTION 3: COMMENTS -->
-  <section class="container comments" aria-label="Track comments">
-    <h3 class="comments__title">Track Comments</h3>
+          <!-- Terminal-style prompt: live track time + name + comment,
+               all on one line, mirroring the posted comment format
+               (time [name] text). Time ticks live off #track-audio
+               while both fields are empty, and freezes the moment the
+               visitor starts typing (or clicks the timeline) — see
+               comments.js's liveMode logic. -->
+          <div class="comment-form__row comment-form__row--prompt">
+            <span class="comment-form__timestamp" aria-hidden="true">0:00</span>
+            <label class="visually-hidden" for="comment-name">Name</label>
+            <input
+              class="comment-form__input comment-form__input--name"
+              id="comment-name"
+              name="name"
+              type="text"
+              placeholder="Name"
+              maxlength="10"
+              required
+            >
+            <label class="visually-hidden" for="comment-text">Comment</label>
+            <input
+              class="comment-form__input comment-form__input--prompt"
+              id="comment-text"
+              name="comment"
+              type="text"
+              placeholder="Enter comment"
+              maxlength="40"
+              required
+            >
+          </div>
 
-    <ul class="comments__list">
-      <!-- comments.js renders <li class="comment"> items here -->
-    </ul>
+          <button class="btn" type="submit">Post</button>
+        </form>
 
-    <form class="comment-form" novalidate>
-      <!-- Honeypot: real visitors never see or fill this (hidden via
-           comments.css, not display:none — see that file's comment) -->
-      <input type="text" class="comment-form__honeypot" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <input type="hidden" name="timestamp" value="0">
+        <ul class="comments__list">
+          <!-- comments.js renders <li class="comment"> items here -->
+        </ul>
+      </section>
 
-      <div class="comment-form__row">
-        <label class="visually-hidden" for="comment-name">Name</label>
-        <input class="comment-form__input" id="comment-name" name="name" type="text" placeholder="Name" maxlength="80" required>
-      </div>
-      <div class="comment-form__row">
-        <label class="visually-hidden" for="comment-text">Comment</label>
-        <textarea class="comment-form__input comment-form__input--text" id="comment-text" name="comment" placeholder="Enter comment at 0:00_" maxlength="500" required></textarea>
-      </div>
-      <button class="btn btn--accent" type="submit">Post</button>
-    </form>
-  </section>
+      <!-- FOOTER -->
+      <footer class="site-footer">
+        <span class="site-footer__brand">Slowvoid Music</span>
+        <a href="mailto:booking@slowvoid.com">booking@slowvoid.com</a>
+      </footer>
+    </div>
 
-  <!-- FOOTER -->
-  <footer class="site-footer">
-    <span class="site-footer__brand">Slowvoid Music</span>
-    <a href="mailto:booking@slowvoid.com">booking@slowvoid.com</a>
-  </footer>
+  </div>
 
   <!-- main.js imports player.js, eq.js, eq-visualizer.js, panner-volume.js,
-       playlist.js, and comments.js directly. social.js is fully
-       independent (by design) and loads as its own module. -->
+       playlist.js, and comments.js directly. social.js and parallax.js are
+       fully independent (by design) and load as their own modules.
+       panels.js is new and only handles opening/closing the floating
+       overlay cards above — it doesn't touch audio or player state. -->
   <script type="module" src="js/main.js"></script>
   <script type="module" src="js/social.js"></script>
+  <script type="module" src="js/parallax.js"></script>
+  <script type="module" src="js/panels.js"></script>
 
 </body>
 </html>

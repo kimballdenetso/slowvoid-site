@@ -14,6 +14,23 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
+   0. PAGE SHELL — 2x SNAP
+   Once there's enough room (900px+ viewport) to fit the page at double
+   its mobile width with some gutter left over, snap the whole page-shell
+   to 840px and reveal the two black side panels filling that gutter.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 900px) {
+  :root {
+    --current-page-width: var(--page-width-desktop);
+  }
+
+  .side-panel {
+    display: block;
+  }
+}
+
+/* --------------------------------------------------------------------------
    1. PAGE-LEVEL
    Caps the single column's width once there's more room than a phone
    screen, so lines of text and controls don't stretch uncomfortably wide.
@@ -67,12 +84,16 @@
 }
 
 @media (min-width: 64rem) {
+  .eq__slider-wrap {
+    height: 128px;
+  }
+
   .eq__slider {
-    height: 180px;
+    width: 128px; /* pre-rotation length matches the wrap's new height */
   }
 
   .eq__band:not(.eq__band--reset)::after {
-    top: calc(1.2em + var(--space-2) + 90px - 0.5px);
+    top: calc(1.2em + var(--space-2) + 64px - 0.5px);
   }
 }
 
@@ -113,8 +134,11 @@
     text-align: left;
   }
 
+  .side-text-wrap {
+    width: 140pt;
+  }
+
   .side-text {
-    width: 28px;
-    font-size: var(--fs-base);
+    width: 140pt;
   }
 }

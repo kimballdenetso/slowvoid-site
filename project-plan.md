@@ -208,3 +208,46 @@ Once the core site is up and running, revisit `visualizer3d.js`/`visualizer3d.cs
 - Comments backend is PHP + MySQL, hosted entirely on Bluehost (Section 3.6 / Section 1).
 - 3D visualizer is a single persistent model (no swapping), driven by transport interactions, not audio analysis (Section 3.4). Fine detail work on the model's rigging/animations is deferred to Phase 2, after the core site is live.
 - **EQ-activation reveal — start with one `.glb`.** The revealed piece will first be attempted as a hidden mesh/child node within the same model file (toggle visibility + local transform, no separate load/positioning needed). **Fallback:** if alignment gets difficult (e.g., the revealed piece needs its own pivot, scale, or independent animation rig that's awkward to nest in one file) or more control is needed than a single-file hierarchy allows, switch to loading a second `.glb` positioned/parented to the main model at runtime. `visualizer3d.js` should be structured so this swap doesn't require rewriting the event-handling logic — only the loading/positioning code changes.
+
+---
+
+## 8. Visual Redesign (Slowvoid mockup)
+
+Once real brand design mockups were available, the site was restructured to match them — a single-column, three-section layout (header → player panel → comments) rather than the earlier generic two-column speculative layout. Key decisions from that pass:
+
+- **Typography**: Ubuntu Mono is now used for *all* type on the site — headings included — with one deliberate exception: the two vertical "SLOWVOID" strips running down the page edges keep the Brevis display font, rendered large (100pt, scaling up further at desktop), outline-only (no fill), and intentionally bled ~60% offscreen so only a partial impression of the wordmark is visible. This is the one place `--font-display` is still used anywhere in the CSS.
+- **Device visual**: the interactive 3D model is **parked as a static placeholder image** for this phase (`assets/images/device.png`, not yet supplied). `visualizer3d.js`/`visualizer3d.css` remain in the project unchanged and unloaded — Phase 2 (see Section 6) will swap the static image back out for the real interactive model once there's a `.glb` to work with.
+- **Header restructure**: social/streaming links moved from a footer icon row into a 2-column labeled-button grid in the header (Bandcamp, Apple Music, Spotify, YouTube, Insta, TikTok), matching the mockup.
+- **Comments restyle**: comment rows became compact single-line terminal-log entries (`0:12 [Name] comment text`) instead of boxed cards, and the comment form became a bracket-prompt-style single-line input (`> `) instead of boxed fields. DOM structure/JS is unchanged — this was a CSS-only restyle.
+- **EQ sliders — technique change, not just a restyle**: the original vertical EQ faders used a `writing-mode: vertical-lr` CSS technique, which turned out to render inconsistently in Safari (falling back to an oversized intrinsic size instead of respecting the authored width/height). That oversized area was overlapping and swallowing clicks meant for the transport controls below it — the root cause of a "player not working" report (no sound, unresponsive buttons, oversized EQ, all one bug). Fixed by rebuilding the vertical sliders as normal horizontal `<input type="range">` elements rotated with `transform: rotate(-90deg)` inside a fixed-size, `overflow: hidden` wrapper — a technique with no cross-browser inconsistency, since it doesn't rely on writing-mode support for form controls. The EQ sliders also picked up the same teal fill-on-value effect as the volume slider as part of this same change.
+- **Button colors**: the "Post comment" button and scrub-bar comment markers were switched from the red accent variant to the standard teal button/accent color, reserving red specifically for destructive actions (admin delete) rather than everyday interactive elements.
+
+---
+
+## 9. Front-End Implementation Log (post-mockup build-out)
+
+Continuing from Section 8, this is what actually got built once implementation started. All of this is CSS/HTML/JS on top of the existing architecture above — no backend or data-model changes except where noted.
+
+### 9.1 Page shell — three fixed-width panels
+The whole page is now organized as one `.page-shell` holding exactly three `.panel` divs: header, player, comments.
+- Mobile-first fixed width: `min(100%, 420px)`, `3px` gap between panels, `10px` rounded corners on each panel by default.
+- **Desktop 2x snap**: at `min-width: 900px`, the shell snaps to `840px` (`--page-width-desktop`, driven by a `--current-page-width` variable responsive.css repoints), and two solid-black `.side-panel` divs (square corners, `display: none` below 900px) fill the leftover viewport gutter on each side.
+- **Header panel**: black background, rounded only on the bottom two corners (flush top edge), overriding the generic `.panel` treatment.
+- **Player panel**: restructured into a `.player-stage` — the device-visual image and now-playing/transport controls form a persistent base layer, while the track list, EQ, volume/pan, and spectrum meter became `.floating-panel` overlay cards, toggled open/closed one-at-a-time via a small button row (`js/panels.js`, new — pure UI state, doesn't touch audio logic).
+- **Side wordmark**: the two vertical "SLOWVOID" strips no longer render live text — they're the outlined wordmark as a `<symbol>` vector (defined once in `index.html`, referenced twice via `<use>`), removing the Brevis font / `-webkit-text-stroke` dependency mentioned in Section 8. Layered at the top of the z-index stack (`var(--z-overlay)`), above the panels and floating overlays; still `pointer-events: none` and `aria-hidden`.
+- Global background is now dark teal (`--color-bg`); button hover state is unified across every `.btn` variant (including `--quiet`/`--accent`) to teal fill + dark text.
+- Header's streaming/social links are wired up in `social.js`'s `SOCIAL_LINKS` config with real URLs (Bandcamp, Apple Music, Spotify, YouTube, Instagram, TikTok).
+
+### 9.2 Comments panel redesign
+- **Panel chrome**: black background, no border, rounded only on the top two corners (mirrors the header's bottom-only rounding).
+- **Layout order**: the comment form now sits above the comment list (was below).
+- **Prompt row**: Name and Comment were merged into one line with the timestamp — `0:12 [Name] comment text`, mirroring the posted-comment format. Name is capped at 10 characters (`width: 10ch`, exact fit at the current font size since Ubuntu Mono is monospace); comment is a single-line `<input maxlength="40">` (was a `<textarea maxlength="500">` — **note:** this is now stricter than `schema.sql`'s `comment_text VARCHAR(500)`, which is unchanged; nothing stops a future longer-limit UI or a direct API call from using more of that column).
+- **Live timestamp**: `comments.js` now has a `liveMode` flag. While both Name and Comment are empty, the prompt's timestamp ticks live off `#track-audio`'s `timeupdate` (via `updatePendingTimestamp`); it freezes the moment the visitor types in either field or manually clicks the scrub-bar timeline. This is the same `pendingTimestamp`/hidden `timestamp` field the form already posted — no new backend field.
+- **Active-segment highlighting**: exactly one of time / name / comment shows a teal fill + black text at a time — time while both fields are blank, otherwise whichever field currently has focus (`refreshActiveSegment()`, driven by focus/blur/input events). Blurring a field with no other field focused clears all highlighting. The blinking cursor that originally sat next to the timestamp was tried and then removed entirely per feedback.
+- **Sorting**: comments are now kept in a `comments` array on the client, always sorted by `timestamp_seconds` before rendering (`sortComments()`), whether they come from the initial `comments_get.php` load, a fresh post, or after a delete (which also prunes the array) — comments no longer need to arrive pre-sorted from the API.
+- **Typography/color**: the whole comments panel — title, list rows, form — is 12pt Ubuntu Mono. `.comments__title`, `.comment__text`, and the `[brackets]` around the username (previously muted) are now teal, matching the timestamp/name that were already teal; only the active-segment fill state shows black text.
+- **8-row scroll cap**: `.comments__list` gets a `max-height` (`calc(8 * --comment-row-height)`, tuned to the actual 12pt row height) with `overflow-y: auto`, so only ~8 comments show before scrolling.
+
+### 9.3 Files touched this pass
+`index.html`, `css/base.css`, `css/chrome.css`, `css/responsive.css`, `js/social.js`, `js/comments.js`, `js/panels.js` (new). `css/player.css`, `css/playlist.css`, `css/eq.css`, `css/comments.css`, and every other `js/*.js` file are unchanged — all of the above was done as additive overrides/new files rather than edits to those originals.
+

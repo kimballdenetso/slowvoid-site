@@ -54,6 +54,9 @@ export function initEQ(audioContext) {
     gainValue.textContent = '0dB';
     gainValue.setAttribute('for', `band-${freq}`);
 
+    const sliderWrap = document.createElement('div');
+    sliderWrap.className = 'eq__slider-wrap';
+
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.className = 'eq__slider';
@@ -62,6 +65,7 @@ export function initEQ(audioContext) {
     slider.max = '12';
     slider.step = '0.5';
     slider.value = '0';
+    slider.style.setProperty('--fill', '50%'); // 0dB sits at the midpoint of -12..12
     slider.setAttribute('aria-orientation', 'vertical');
     slider.setAttribute('aria-label', `${FREQUENCY_LABELS[i]} Hz gain`);
     slider.dataset.freq = String(freq);
@@ -70,14 +74,64 @@ export function initEQ(audioContext) {
     freqLabel.className = 'eq__freq-label';
     freqLabel.textContent = FREQUENCY_LABELS[i];
 
+    function applyValue(value) {
+      const clamped = Math.min(12, Math.max(-12, value));
+      if (parseFloat(slider.value) === clamped) return;
+      slider.value = String(clamped);
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     slider.addEventListener('input', () => {
       const value = parseFloat(slider.value);
       filters[i].gain.value = value;
       gainValue.textContent = `${value > 0 ? '+' : ''}${value}dB`;
+      // Same fill technique as the volume slider (player.css /
+      // panner-volume.js) — percentage of this slider's own min..max
+      // range, since the rotate transform doesn't change how the
+      // underlying horizontal input reports its value.
+      const percent = ((value - (-12)) / (12 - -12)) * 100;
+      slider.style.setProperty('--fill', `${percent}%`);
       bandsEl.dispatchEvent(new CustomEvent('eq:changed', { bubbles: true }));
     });
 
-    band.append(gainValue, slider, freqLabel);
+    // Pointer interaction lives on the wrap, not the (pointer-events:
+    // none) slider itself — see the comment in eq.css. Value is derived
+    // directly from the pointer's vertical position within the wrap, so
+    // it can't be misread as belonging to an adjacent band the way the
+    // native rotated input's own click handling could be.
+    function valueFromPointer(clientY) {
+      const rect = sliderWrap.getBoundingClientRect();
+      let percent = 1 - (clientY - rect.top) / rect.height; // top = max, bottom = min
+      percent = Math.min(1, Math.max(0, percent));
+      const raw = -12 + percent * 24;
+      return Math.round(raw / 0.5) * 0.5; // snap to the 0.5dB step
+    }
+
+    sliderWrap.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      slider.focus();
+      sliderWrap.setPointerCapture(e.pointerId);
+      sliderWrap.classList.add('is-dragging');
+      applyValue(valueFromPointer(e.clientY));
+    });
+
+    sliderWrap.addEventListener('pointermove', (e) => {
+      if (!sliderWrap.hasPointerCapture(e.pointerId)) return;
+      applyValue(valueFromPointer(e.clientY));
+    });
+
+    function endDrag(e) {
+      if (sliderWrap.hasPointerCapture(e.pointerId)) {
+        sliderWrap.releasePointerCapture(e.pointerId);
+      }
+      sliderWrap.classList.remove('is-dragging');
+    }
+
+    sliderWrap.addEventListener('pointerup', endDrag);
+    sliderWrap.addEventListener('pointercancel', endDrag);
+
+    sliderWrap.appendChild(slider);
+    band.append(gainValue, sliderWrap, freqLabel);
     bandsEl.insertBefore(band, resetColumn);
 
     sliders.push(slider);
@@ -118,6 +172,7 @@ export function initEQ(audioContext) {
     });
     sliders.forEach((slider) => {
       slider.value = '0';
+      slider.style.setProperty('--fill', '50%');
     });
     gainReadouts.forEach((output) => {
       output.textContent = '0dB';
