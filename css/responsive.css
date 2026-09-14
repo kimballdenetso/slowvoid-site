@@ -55,7 +55,7 @@
     gap: var(--space-6);
   }
 
-  .player__transport-row {
+  .player__row--top {
     flex-wrap: nowrap;
   }
 

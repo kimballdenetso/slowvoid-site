@@ -59,7 +59,7 @@ Bluehost shared hosting gives you:
     └── schema.sql                ← comments table definition (for phpMyAdmin import)
 ```
 
-Keeping every feature in its own file means you (or anyone helping later) can edit the EQ without touching the player, swap the 3D model without touching comments, etc.
+Keeping every feature in its own file means you (or anyone helping later) can edit the EQ without touching the player, swap the 3D model without touching comments, etc. If agent doesn't have the needed file ask user for it. 
 
 ---
 
@@ -250,4 +250,34 @@ The whole page is now organized as one `.page-shell` holding exactly three `.pan
 
 ### 9.3 Files touched this pass
 `index.html`, `css/base.css`, `css/chrome.css`, `css/responsive.css`, `js/social.js`, `js/comments.js`, `js/panels.js` (new). `css/player.css`, `css/playlist.css`, `css/eq.css`, `css/comments.css`, and every other `js/*.js` file are unchanged — all of the above was done as additive overrides/new files rather than edits to those originals.
+
+---
+
+## 10. Player & Track List Redesign Pass
+
+Continuing from Section 9, this pass reworked the player panel itself (transport, feature toggles, progress bar) and the track list, plus introduced a shared text-size token used by both.
+
+### 10.1 Player panel — two-row layout
+- **Row 1**: transport block (prev/play/pause/stop/next) on the left, feature-toggle block (EQ / VIZ / FILTER / LIST) on the right. **Row 2**: just the progress bar + total time.
+- **Transport buttons**: all five stay visible at all times now — no more hiding Pause while paused / Play while playing. Instead, the Play button reflects state via `aria-pressed` (set by `player.js` on the audio element's `play`/`pause` events), filled teal while playing. Pause and Stop are now functionally identical — both just call `audioEl.pause()`; Stop no longer resets position to `0`. Stop keeps its own distinct icon purely as a visual choice.
+- **Feature toggles**: replaced the old icon-only toggle row (track list / EQ / volume / spectrum) with square-edged text-label buttons — `EQ`, `VIZ` (spectrum), `FILTER`, `LIST` (track list) — merged into one border-collapsed block (no gaps between buttons, shared 1px borders) sitting next to the transport block instead of off in its own row. Label text is teal by default; the active/open state (`aria-expanded="true"`, flipped by `js/panels.js`) fills the button solid teal with dark text, same language as the Play button's active state.
+  - **Volume/Balance** toggle was dropped from this UI entirely (per a prior decision this pass) — its `#panel-volume` markup and `panner-volume.js` wiring are untouched, just unreachable from a button for now.
+  - **FILTER** is a stub — `#panel-filter` exists with placeholder-only content (no real controls, no audio-graph wiring). Reserved for a not-yet-designed feature.
+  - **LIST** (`data-panel-toggle="tracklist"`) reopens the existing `#panel-tracklist` panel — same panel that was live before Section 9's floating-panel system, just newly reachable again from this button group instead of a separate row.
+- **Progress bar**: dropped the canvas waveform/amplitude drawing entirely (and with it, `player.js`'s dependency on the shared `AnalyserNode` — `eq-visualizer.js` is now the only consumer of that node). The bar is a single 1px line, dark teal by default, filling in accent teal from the left via a CSS gradient keyed off a `--progress` custom property (`player.js` sets this on the native range input, same left-fills-in technique as the volume slider). A short static solid line marks the very start of the bar. Only the total track length is shown, at the far right end — the current-time readout next to the bar was removed. `comments.js`'s scrub-bar comment markers are unaffected: it still hooks into the same `.player__timeline` / `.player__scrub-input` elements, which kept their class names and relative-positioning contract through this redesign.
+- **Chrome**: the player panel's own background fill and outer border were removed — it's fully transparent now, relying on whatever sits behind it (the device-visual image / `.player-stage`).
+
+### 10.2 Track list (`playlist.css`)
+- Dropped the panel's own background and border — transparent, no frame of its own (distinct from the floating-panel chrome in `chrome.css`, which is unaffected).
+- Each track is now one line: title and artist sit side by side (title truncates first if both don't fit) instead of stacking on two lines. The divider line previously drawn between tracks was also removed, along with the current-track's left border accent.
+- **Current track**: highlighted with a solid teal fill (`background-color: var(--color-accent)`) and dark text for contrast — replacing the previous translucent tint + left-border indicator. No other row gets any fill or border; the hover state was changed from a translucent background tint to a plain text-color change, so the list truly has no fill anywhere except the current-track highlight.
+- **Typography**: track number/title/artist are all teal, sized at `--fs-xs` (12px / 9pt) — three points smaller than the new shared master size below.
+
+### 10.3 Shared text-size token
+Added `--fs-master` to `base.css`'s token block, aliased to `--fs-base` (`1rem` / 16px), which already numerically equals the comments panel's existing 12pt text size (12pt = 16px at standard 96dpi). `player.css`'s various text elements (title, artist, time readout, volume/pan labels, feature-toggle labels) were switched from their previous mix of `--fs-xs`/`--fs-sm`/`--fs-md` to this one shared token, so the whole player reads at one consistent size tied to the comments panel's scale. `playlist.css`'s heading and the "one line per track" merge in 10.2 also reference this system (`--fs-master` for the heading, `--fs-xs` — three points below master — for the track rows themselves).
+
+**Open item:** `comments.css` wasn't available this pass, so `--fs-master`'s equivalence to the comments panel's type size is inferred from this doc's own Section 9.2 note ("12pt Ubuntu Mono") rather than confirmed against that file directly. If `comments.css` sets the comment text some other way (a literal `font-size: 12pt` rather than a variable, or a different value than 12pt entirely), send it over to true this up.
+
+### 10.4 Files touched this pass
+`index.html`, `css/base.css`, `css/player.css`, `css/playlist.css`, `js/player.js`. `css/comments.css`, `js/comments.js`, `css/chrome.css`, `js/panels.js`, `css/eq.css`, and every other file are unchanged — `js/comments.js` was reviewed (not edited) specifically to confirm the progress-bar redesign didn't break its `.player__timeline`/`.comment-marker` integration.
 

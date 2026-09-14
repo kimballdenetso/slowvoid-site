@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/playlist.css">
   <link rel="stylesheet" href="css/eq.css">
   <link rel="stylesheet" href="css/comments.css">
+  <link rel="stylesheet" href="css/admin.css">
   <link rel="stylesheet" href="css/chrome.css">
   <link rel="stylesheet" href="css/responsive.css">
 
@@ -51,7 +52,57 @@
        viewport has room to snap the page to 2x width (see
        css/responsive.css, 900px breakpoint). Square corners, no radius. -->
   <div class="side-panel side-panel--left" aria-hidden="true"></div>
-  <div class="side-panel side-panel--right" aria-hidden="true"></div>
+
+  <!-- Was a plain black filler div — now also hosts the admin comment
+       editor (js/admin.js, css/admin.css). Still the same black panel,
+       hidden below the 900px desktop breakpoint per responsive.css, so
+       the editor is desktop-only for free; admin.js adds a belt-and-
+       braces JS check too, since a resize/devtools override could
+       otherwise reveal it under 900px. Closed by default — opened via
+       the "Admin" button in the header (site-header). -->
+  <div class="side-panel side-panel--right">
+    <section class="admin-panel" id="admin-panel" aria-label="Comment admin" hidden>
+
+      <!-- Shown until a valid admin session exists. Posts to
+           api/admin_login.php (new endpoint — see project-plan.md
+           Section 3.6/5 for the existing password-gated admin.php
+           plan; this is the same password check, just returning a
+           token for JS instead of rendering server-side HTML). -->
+      <form class="admin-panel__login" id="admin-login-form">
+        <h3 class="admin-panel__title">Admin</h3>
+        <label class="visually-hidden" for="admin-password">Password</label>
+        <input
+          class="admin-panel__input"
+          id="admin-password"
+          name="password"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+          required
+        >
+        <button class="btn" type="submit">Log in</button>
+        <p class="admin-panel__error" id="admin-login-error" hidden></p>
+      </form>
+
+      <!-- Shown once logged in. Lists every comment across every track
+           (api/comments_all.php — new endpoint, admin-token protected)
+           with inline edit + delete. Edit posts to api/comments_edit.php
+           (new); delete reuses the existing api/comments_delete.php,
+           extended to accept an admin_token alongside the visitor
+           owner_token, per project-plan.md's "delete button that calls
+           comments_delete.php with a matching admin token." -->
+      <div class="admin-panel__editor" id="admin-editor" hidden>
+        <div class="admin-panel__header">
+          <h3 class="admin-panel__title">Comments</h3>
+          <button class="btn btn--quiet" type="button" id="admin-logout">Log out</button>
+        </div>
+        <ul class="admin-panel__list" id="admin-comment-list">
+          <!-- admin.js renders <li class="admin-comment"> rows here -->
+        </ul>
+      </div>
+
+    </section>
+  </div>
 
   <!-- Decorative, aria-hidden vertical wordmark strips (see
        css/chrome.css) — now rendered from the vector symbol above
@@ -82,6 +133,11 @@
         <nav class="site-header__links" aria-label="Listen and follow">
           <!-- social.js renders one .btn link per platform here -->
         </nav>
+        <!-- Opens the admin comment editor in the right side panel
+             (desktop only — see that panel's markup below). Same .btn
+             styling as every other button on the site; admin.js wires
+             the click handler. -->
+        <button class="btn admin-toggle" type="button" id="admin-toggle" aria-expanded="false" aria-controls="admin-panel">Admin</button>
       </header>
     </div>
 
@@ -97,35 +153,39 @@
                Section 3.4/7 for the Phase 2 interactive-3D swap) -->
           <section class="device-visual" aria-hidden="true">
             <img class="device-visual__image" src="assets/images/device.png" alt="">
-            <p class="device-visual__flavor-text">
-              Roche limit // decent to SR388 // the aphelion score // threshold shores // solar gravity // object that is me // unreleased //
-            </p>
           </section>
 
-          <!-- BASE LAYER: persistent playback core (now-playing +
-               transport/scrubber) — always visible, sits above the
-               visualizer, everything else floats on top of/around it -->
+          <!-- BASE LAYER: persistent playback core (transport/scrubber)
+               — always visible, sits above the visualizer, everything
+               else floats on top of/around it. The current-track
+               display that used to live here was removed — the
+               track list's teal-highlighted row is now the only
+               "what's playing" indicator (see #panel-tracklist below).
+               main.js now null-checks before writing to
+               .player__title/.player__artist, so their absence here
+               is safe (see js/main.js's setTextIfPresent). -->
           <div class="player-core">
-            <!-- Now playing — player__title/artist are looked up
-                 globally by main.js, not scoped to .player -->
-            <p class="now-playing">
-              <span class="player__title">Loading…</span>
-              <span class="player__artist">Slowvoid</span>
-            </p>
 
-            <!-- PLAYER: transport + scrubber (see css/player.css —
-                 player.js finds the buttons/scrub-input/time spans
-                 below via a scoped query on this .player element) -->
+            <!-- PLAYER: transport + feature toggles (top row) and
+                 progress bar (bottom row) — see css/player.css.
+                 player.js finds the buttons/scrub-input/time span
+                 below via a scoped query on this .player element.
+                 Feature-toggle buttons open/close the floating cards
+                 below; that show/hide behavior is handled by
+                 js/panels.js (flips aria-expanded/.is-open only — it
+                 doesn't touch any audio/player logic), unchanged from
+                 before other than which panels are reachable here. -->
             <section class="player" aria-label="Music player">
-              <div class="player__transport-row">
+
+              <div class="player__row player__row--top">
                 <div class="player__transport" role="group" aria-label="Playback controls">
                   <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
                     <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM20 4L9 12l11 8z"/></svg>
                   </button>
-                  <button class="btn btn--icon" data-action="play" aria-label="Play">
+                  <button class="btn btn--icon" data-action="play" aria-label="Play" aria-pressed="false">
                     <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
                   </button>
-                  <button class="btn btn--icon" data-action="pause" aria-label="Pause" hidden>
+                  <button class="btn btn--icon" data-action="pause" aria-label="Pause">
                     <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
                   </button>
                   <button class="btn btn--icon" data-action="stop" aria-label="Stop">
@@ -136,40 +196,30 @@
                   </button>
                 </div>
 
-                <div class="player__scrubber">
-                  <span class="player__time" data-time="current">0:00</span>
-                  <div class="player__timeline">
-                    <canvas class="player__timeline-canvas"></canvas>
-                    <input
-                      class="player__scrub-input"
-                      type="range"
-                      min="0" max="100" value="0" step="0.1"
-                      aria-label="Seek"
-                    />
-                  </div>
-                  <span class="player__time" data-time="total">0:00</span>
+                <div class="player__features" role="group" aria-label="Player features">
+                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="tracklist" aria-expanded="false" aria-controls="panel-tracklist">LIST</button>
+                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq">EQ</button>
+                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum">VIZ</button>
+                  <!-- Stub: no panel content/wiring yet, see #panel-filter below. -->
+                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="filter" aria-expanded="false" aria-controls="panel-filter">FILTER</button>
                 </div>
               </div>
-            </section>
-          </div>
 
-          <!-- FLOATING PANEL TOGGLES — opens/closes each overlay card
-               below. Toggle behavior is handled by js/panels.js, which
-               only flips aria-expanded/.is-open — it doesn't touch any
-               audio/player logic. -->
-          <div class="player-toggles" role="group" aria-label="Show panel">
-            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="tracklist" aria-expanded="false" aria-controls="panel-tracklist" aria-label="Toggle track list">
-              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
-            </button>
-            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq" aria-label="Toggle equalizer">
-              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM11 9h2v11h-2zM16 2h2v18h-2z"/></svg>
-            </button>
-            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="volume" aria-expanded="false" aria-controls="panel-volume" aria-label="Toggle volume and balance">
-              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 5V5l-5 5zM17 8l4 4-4 4-1.4-1.4L18.2 12l-2.6-2.6z"/></svg>
-            </button>
-            <button class="btn btn--icon panel-toggle" type="button" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum" aria-label="Toggle spectrum analyzer">
-              <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h2v6H4zM8 8h2v12H8zM12 3h2v17h-2zM16 10h2v10h-2zM20 6h2v14h-2z"/></svg>
-            </button>
+              <div class="player__row player__row--progress">
+                <div class="player__timeline">
+                  <input
+                    class="player__scrub-input"
+                    type="range"
+                    min="0" max="100" value="0" step="0.1"
+                    aria-label="Seek"
+                  />
+                  <!-- comments.js renders its timestamp markers into this
+                       timeline; left in place unchanged from before. -->
+                </div>
+                <span class="player__time" data-time="total">0:00</span>
+              </div>
+
+            </section>
           </div>
 
           <!-- FLOATING OVERLAY: track list (see css/playlist.css —
@@ -200,6 +250,17 @@
                   </button>
                 </div>
               </div>
+            </section>
+          </div>
+
+          <!-- FLOATING OVERLAY: filter — stub only. The "FILTER" toggle
+               button needs somewhere to point (js/panels.js expects a
+               matching #panel-filter), but the feature itself hasn't
+               been designed yet. Placeholder content only. -->
+          <div class="floating-panel" id="panel-filter" data-panel="filter">
+            <section class="filter-panel" aria-label="Filter">
+              <h3 class="filter-panel__title">Filter</h3>
+              <p class="filter-panel__note">Coming soon.</p>
             </section>
           </div>
 
@@ -300,6 +361,7 @@
   <script type="module" src="js/social.js"></script>
   <script type="module" src="js/parallax.js"></script>
   <script type="module" src="js/panels.js"></script>
+  <script type="module" src="js/admin.js"></script>
 
 </body>
 </html>

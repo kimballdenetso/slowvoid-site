@@ -80,6 +80,15 @@
   --fs-xl: 2rem;       /* 32px  — page/artist title (mobile) */
   --fs-2xl: 2.75rem;   /* 44px  — hero display (scales up in responsive.css) */
 
+  /* Master text size — one shared size for player/playlist UI text,
+     set to match the comments panel (12pt, which is 16px @ standard
+     96dpi and so already equals --fs-base above). An alias rather than
+     a new value, so it stays in lockstep if --fs-base ever changes.
+     If comments.css turns out to hardcode `font-size: 12pt` directly
+     instead of referencing --fs-base, the two are numerically the
+     same today regardless. */
+  --fs-master: var(--fs-base);
+
   --lh-tight: 1.15;
   --lh-normal: 1.5;
   --ls-display: 0.02em;

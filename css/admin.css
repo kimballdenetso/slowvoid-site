@@ -1,0 +1,241 @@
+/* ==========================================================================
+   ADMIN.CSS
+   Styles the admin comment editor that lives inside the right
+   .side-panel (see index.html). Desktop-only by construction: the
+   .side-panel itself is display:none below the 900px breakpoint
+   (responsive.css), so nothing here needs its own media query for
+   that — admin.js additionally refuses to open the panel under 900px
+   as a belt-and-braces check.
+
+   Depends on base.css for tokens and the .btn component, same as
+   comments.css.
+
+   Expected markup contract:
+
+   <div class="side-panel side-panel--right">
+     <section class="admin-panel" id="admin-panel" hidden>
+
+       <form class="admin-panel__login" id="admin-login-form">
+         <h3 class="admin-panel__title">Admin</h3>
+         <input class="admin-panel__input" id="admin-password" type="password">
+         <button class="btn" type="submit">Log in</button>
+         <p class="admin-panel__error" id="admin-login-error" hidden></p>
+       </form>
+
+       <div class="admin-panel__editor" id="admin-editor" hidden>
+         <div class="admin-panel__header">
+           <h3 class="admin-panel__title">Comments</h3>
+           <button class="btn btn--quiet" id="admin-logout">Log out</button>
+         </div>
+         <ul class="admin-panel__list" id="admin-comment-list">
+           <li class="admin-comment" data-comment-id="17" data-track-id="track-3">
+             <div class="admin-comment__meta">
+               <span class="admin-comment__timestamp">1:24</span>
+               <span class="admin-comment__track">track-3</span>
+             </div>
+             <input class="admin-comment__input admin-comment__input--name" value="Jordan" maxlength="80">
+             <textarea class="admin-comment__input admin-comment__input--text" maxlength="500">This drop hits so hard</textarea>
+             <div class="admin-comment__actions">
+               <button class="btn admin-comment__save">Save</button>
+               <button class="btn btn--accent admin-comment__delete">Delete</button>
+             </div>
+           </li>
+         </ul>
+       </div>
+
+     </section>
+   </div>
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. PANEL SHELL
+   The .side-panel itself is plain black (chrome.css); this just lays
+   out the editor content inside it and gives it room to breathe/scroll
+   independent of viewport height.
+   -------------------------------------------------------------------------- */
+
+/* Only the RIGHT side-panel gets lifted — the left one stays purely
+   decorative, unchanged. Establishes its own stacking context so the
+   z-index on .admin-panel below actually has something to win against
+   (a z-index on a child does nothing if its parent never creates a
+   stacking context of its own). */
+.side-panel--right {
+  position: relative;
+  z-index: calc(var(--z-overlay, 10) + 1);
+}
+
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-4) var(--space-3);
+  overflow-y: auto;
+  font-family: var(--font-body);
+  color: var(--color-text);
+
+  /* .side-panel is decorative/empty everywhere else on the site (see
+     chrome.css), so it may carry pointer-events: none and/or sit below
+     the wordmark overlay's z-index. Force this specific instance back
+     to interactive and above that layer now that it has real content. */
+  position: relative;
+  z-index: calc(var(--z-overlay, 10) + 1);
+  pointer-events: auto;
+}
+
+/* Belt-and-braces: make sure every interactive element inside inherits
+   pointer-events even if something upstream sets it to none on an
+   ancestor with !important. */
+.admin-panel input,
+.admin-panel textarea,
+.admin-panel button {
+  pointer-events: auto;
+}
+
+.admin-panel__title {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-ui);
+  margin: 0;
+}
+
+.admin-panel__title::before {
+  content: "[ ";
+}
+
+.admin-panel__title::after {
+  content: " ]";
+}
+
+/* --------------------------------------------------------------------------
+   2. LOGIN FORM
+   -------------------------------------------------------------------------- */
+
+.admin-panel__login {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.admin-panel__input {
+  width: 100%;
+  padding: var(--space-1) 0;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-teal-dark);
+  border-radius: 0;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  min-height: 32px;
+}
+
+.admin-panel__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.admin-panel__input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--color-accent);
+}
+
+.admin-panel__error {
+  font-size: var(--fs-xs);
+  color: var(--color-accent-warn, #e05a4e);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   3. EDITOR
+   -------------------------------------------------------------------------- */
+
+.admin-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.admin-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-y: auto;
+}
+
+.admin-comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-teal-dark);
+  font-size: var(--fs-sm);
+}
+
+.admin-comment__meta {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.admin-comment__timestamp {
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-comment__input {
+  width: 100%;
+  padding: var(--space-1) 0;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-teal-dark);
+  border-radius: 0;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+}
+
+.admin-comment__input--name {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.admin-comment__input--text {
+  resize: vertical;
+  min-height: 44px;
+}
+
+.admin-comment__input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--color-accent);
+}
+
+/* Dirty state — an edited-but-unsaved field gets a visible marker so
+   the admin doesn't lose changes without noticing. Toggled by
+   admin.js on input, cleared on save. */
+.admin-comment__input.is-dirty {
+  border-bottom-color: var(--color-accent);
+}
+
+.admin-comment__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.admin-comment__actions .btn {
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  font-size: var(--fs-xs);
+}
+
+/* Save uses the standard teal button; delete borrows the same red
+   .btn--accent treatment comments.css reserves for destructive admin
+   actions. */
+
+.admin-panel__empty {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}

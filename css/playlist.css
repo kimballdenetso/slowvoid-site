@@ -33,12 +33,10 @@
   gap: var(--space-3);
   width: 100%;
   padding: var(--space-4);
-  background-color: var(--color-bg-surface);
-  border: var(--border-width) solid var(--color-border);
 }
 
 .playlist__title {
-  font-size: var(--fs-md);
+  font-size: var(--fs-master);
   color: var(--color-text);
 }
 
@@ -49,10 +47,6 @@
      comments/everything below it far down the page on a long tracklist. */
   max-height: 260px;
   overflow-y: auto;
-}
-
-.playlist__item + .playlist__item {
-  border-top: 1px solid var(--color-teal-dark);
 }
 
 .playlist__track-btn {
@@ -74,7 +68,7 @@
 }
 
 .playlist__track-btn:hover {
-  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
 }
 
 .playlist__track-btn:focus-visible {
@@ -83,43 +77,53 @@
 }
 
 .playlist__track-number {
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
+  font-size: var(--fs-xs); /* 3pt below --fs-master, see base.css */
+  color: var(--color-accent);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   width: 2ch;
 }
 
+/* Title + artist sit on one line together (not stacked), so each
+   track occupies exactly one row — title truncates first if the two
+   don't both fit. */
 .playlist__track-info {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: var(--space-2);
   min-width: 0; /* allow ellipsis truncation below to actually work */
 }
 
 .playlist__track-title {
-  font-size: var(--fs-base);
+  font-size: var(--fs-xs); /* 3pt below --fs-master, see base.css */
+  color: var(--color-accent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .playlist__track-artist {
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
+  font-size: var(--fs-xs); /* 3pt below --fs-master, see base.css */
+  color: var(--color-accent);
   text-transform: uppercase;
   letter-spacing: var(--ls-ui);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Currently playing/selected track — set via aria-current="true" by
    playlist.js on every 'trackchange' event, rather than a plain class,
-   so assistive tech gets the same signal sighted users see. */
+   so assistive tech gets the same signal sighted users see. Solid
+   teal fill is the only fill anywhere in this list; every other row
+   is fully transparent (see .playlist / .playlist__track-btn above). */
 .playlist__track-btn[aria-current="true"] {
-  background-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
-  border-left: var(--border-width) solid var(--color-accent);
-  padding-left: calc(var(--space-2) - var(--border-width));
+  background-color: var(--color-accent);
 }
 
 .playlist__track-btn[aria-current="true"] .playlist__track-number,
-.playlist__track-btn[aria-current="true"] .playlist__track-title {
-  color: var(--color-accent);
+.playlist__track-btn[aria-current="true"] .playlist__track-title,
+.playlist__track-btn[aria-current="true"] .playlist__track-artist {
+  color: var(--color-bg-surface);
 }

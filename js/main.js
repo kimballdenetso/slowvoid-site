@@ -74,6 +74,19 @@ function buildAudioGraph() {
 }
 
 /**
+ * Writes text to an element if it exists, no-ops otherwise — lets
+ * loadTrack() keep working even if the current-track display markup
+ * changes or is removed (e.g. the track list's own highlighted row
+ * being the only "now playing" indicator), instead of throwing and
+ * halting init() partway through, which used to also take down the
+ * player and comments (both wired up later in the same function).
+ */
+function setTextIfPresent(selector, text) {
+  const el = document.querySelector(selector);
+  if (el) el.textContent = text;
+}
+
+/**
  * Swaps the <audio> element's source and updates the title/artist text.
  * Does NOT auto-play — browsers require a user gesture to start audio,
  * and the person may be mid-way through arranging things before playing.
@@ -83,8 +96,8 @@ function loadTrack(index, { autoplay = false } = {}) {
   const wasPlaying = !audioEl.paused;
 
   audioEl.src = track.src;
-  document.querySelector('.player__title').textContent = track.title;
-  document.querySelector('.player__artist').textContent = track.artist;
+  setTextIfPresent('.player__title', track.title);
+  setTextIfPresent('.player__artist', track.artist);
 
   document.dispatchEvent(
     new CustomEvent('trackchange', { detail: { trackId: track.id, index } })

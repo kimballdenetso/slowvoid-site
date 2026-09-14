@@ -12,12 +12,7 @@
 
    <section class="player" aria-label="Music player">
 
-     <div class="player__meta">
-       <h2 class="player__title">Track Title</h2>
-       <p class="player__artist">Artist Name</p>
-     </div>
-
-     <div class="player__transport-row">
+     <div class="player__row player__row--top">
        <div class="player__transport" role="group" aria-label="Playback controls">
          <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
            <svg class="player__icon" aria-hidden="true">...</svg>
@@ -36,45 +31,41 @@
          </button>
        </div>
 
-       <div class="player__scrubber">
-         <span class="player__time" data-time="current">0:00</span>
-         <div class="player__timeline">
-           <canvas class="player__timeline-canvas"></canvas>
-           <input
-             class="player__scrub-input"
-             type="range"
-             min="0" max="100" value="0" step="0.1"
-             aria-label="Seek"
-           />
-         </div>
-         <span class="player__time" data-time="total">0:00</span>
+       <div class="player__features" role="group" aria-label="Player features">
+         <button class="btn player__feature-toggle panel-toggle" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq">EQ</button>
+         <button class="btn player__feature-toggle panel-toggle" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum">VIZ</button>
+         <button class="btn player__feature-toggle panel-toggle" data-panel-toggle="filter" aria-expanded="false" aria-controls="panel-filter">FILTER</button>
        </div>
      </div>
 
-     <div class="player__levels" aria-label="Volume and panning">
-       <div class="player__control">
-         <label class="player__control-label" for="volume">Volume</label>
-         <input class="player__range player__range--volume" id="volume" type="range"
-                min="0" max="100" value="80" />
+     <div class="player__row player__row--progress">
+       <div class="player__timeline">
+         <input
+           class="player__scrub-input"
+           type="range"
+           min="0" max="100" value="0" step="0.1"
+           aria-label="Seek"
+         />
        </div>
-       <div class="player__control">
-         <label class="player__control-label" for="pan">Pan</label>
-         <input class="player__range player__range--pan" id="pan" type="range"
-                min="-1" max="1" value="0" step="0.01" />
-       </div>
+       <span class="player__time" data-time="total">0:00</span>
      </div>
 
    </section>
+
+   Volume/pan markup (`.player__levels`) still exists in index.html inside
+   the #panel-volume floating card, just no longer toggled from here — its
+   rules below are unchanged and still apply there.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   0. FIX: native [hidden] loses to .btn's display rule (author stylesheet
-   specificity), so the play/pause swap needs this restored explicitly.
+   0. PLAY / PAUSE / STOP behavior note:
+   All five transport buttons stay visible at all times — no more
+   hiding pause while paused. Instead, the Play button itself reflects
+   playing/paused state via aria-pressed (filled teal when playing —
+   see rule in section 3). Pause and Stop are functionally identical
+   (both just pause audioEl — see player.js); Stop keeping a distinct
+   icon is a deliberate visual choice even though the behavior matches.
    -------------------------------------------------------------------------- */
-
-.player [hidden] {
-  display: none;
-}
 
 /* --------------------------------------------------------------------------
    1. PLAYER CONTAINER
@@ -88,57 +79,55 @@
   gap: var(--space-5);
   width: 100%;
   padding: var(--space-4);
-  background-color: var(--color-bg-surface);
-  border: var(--border-width) solid var(--color-border);
 }
 
 /* --------------------------------------------------------------------------
-   2. TRACK TITLE (separate element)
+   2. (removed) The now-playing title/artist block that used to live
+   here was removed from index.html — the track list's teal-highlighted
+   current-track row is now the only "what's playing" indicator.
    -------------------------------------------------------------------------- */
-
-.player__meta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.player__title {
-  font-size: var(--fs-md);
-  color: var(--color-text);
-  /* Long titles shouldn't break the layout on narrow screens */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.player__artist {
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-ui);
-}
 
 /* --------------------------------------------------------------------------
-   3. TRANSPORT + SCRUBBER
-   These sit together as one functional row: buttons control playback,
-   the scrubber shows/sets position. Mobile-first stacks them; wraps to
-   share a row once there's enough width (handled fully in responsive.css,
-   this just allows wrapping so nothing overflows in between).
+   3. TOP ROW: TRANSPORT BLOCK + FEATURE-TOGGLE BLOCK
+   Two button groups, each rendered as one solid-bordered block with no
+   gap between buttons (adjacent 1px borders overlap via negative
+   margin so the shared edge stays a single 1px line, not a double
+   line). Mobile-first stacks the two blocks; wraps to share a row once
+   there's enough width (handled fully in responsive.css, this just
+   allows wrapping so nothing overflows in between).
    -------------------------------------------------------------------------- */
 
-.player__transport-row {
+.player__row--top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
 }
 
-.player__transport {
+.player__transport,
+.player__features {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  align-items: stretch;
   flex-shrink: 0;
+}
+
+.player__transport .btn,
+.player__features .btn {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 0;
+}
+
+.player__transport .btn + .btn,
+.player__features .btn + .btn {
+  margin-left: calc(var(--border-width) * -1);
+}
+
+/* Play button reflects playing state via aria-pressed (set by
+   player.js on the audio element's 'play'/'pause' events) — filled
+   teal while playing, same fill language as the feature toggles. */
+.player__transport [data-action="play"][aria-pressed="true"] {
+  background-color: var(--color-accent);
+  color: var(--color-bg-surface);
 }
 
 /* Play/Pause/Stop icons are drawn as inline SVG in the HTML; this just
@@ -149,53 +138,90 @@
   fill: currentColor;
 }
 
+/* Toggle buttons for the other player features (EQ / spectrum / filter).
+   Text-label buttons, square-edged, matching the transport block's
+   border treatment. panels.js flips aria-expanded on click; the fill
+   here is driven entirely by that attribute, no extra JS needed. */
+.player__feature-toggle {
+  padding: 0 var(--space-3);
+  font-size: var(--fs-master);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-ui);
+  color: var(--color-accent);
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.player__feature-toggle[aria-expanded="true"] {
+  background-color: var(--color-accent);
+  color: var(--color-bg-surface);
+}
+
 /* --------------------------------------------------------------------------
-   4. SCRUBBABLE TIMING VISUALIZER
-   Layered construction:
-     - .player__timeline-canvas draws the amplitude/timing bar and the
-       played-vs-remaining fill (player.js owns this drawing loop)
-     - .player__scrub-input is a native range input on top, fully
-       transparent except for a thin playhead thumb — this is what
-       actually handles dragging, click-to-seek, and keyboard seeking
-       (arrow keys), so accessibility comes for free from the native
-       element rather than being reimplemented on the canvas.
+   4. BOTTOM ROW: PROGRESS BAR
+   A single 1px line, dark teal by default, filling in with the accent
+   teal from the left as the track plays — no waveform/canvas. Total
+   track length sits at the far right end.
+
+   - .player__scrub-input is the native range input; its track IS the
+     visible line (::-webkit-slider-runnable-track / ::-moz-range-track),
+     painted with the same left-fills-in gradient technique as the
+     volume slider below (--progress set inline by player.js on
+     'input'/timeupdate). This keeps dragging, click-to-seek, and
+     keyboard seeking on the accessible native element rather than
+     reimplementing them on a canvas.
+   - comments.js hooks into this same .player__timeline/.player__scrub-input
+     pair (unchanged selectors) to place its timestamp markers and to
+     open the "leave a comment here" popover on click — see comments.css
+     for marker styling, which is untouched by this file.
    -------------------------------------------------------------------------- */
 
-.player__scrubber {
+.player__row--progress {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex: 1 1 220px;
-  min-width: 0; /* allow the timeline to shrink inside the flex row */
 }
 
 .player__time {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-master);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums; /* digits don't jiggle the layout as they change */
   flex-shrink: 0;
   min-width: 3.5ch;
-}
-
-.player__time[data-time="total"] {
   text-align: right;
 }
 
 .player__timeline {
   position: relative;
   flex: 1 1 auto;
-  height: 44px; /* full tap-target height, even though the visible bar is thinner */
+  min-width: 0; /* allow the timeline to shrink inside the flex row */
+  height: 24px; /* tap-target height, even though the visible line is 1px */
 }
 
-.player__timeline-canvas {
+/* Fixed solid line marking the start of the bar — same off-white/3px
+   language as the playhead thumb, but static (not the draggable
+   thumb). Rendered as ::after (not ::before) so it paints after the
+   scrub input in the box and stays visibly on top of it, the same
+   stacking trick that lets comments.js's markers sit on top below. */
+.player__timeline::after {
+  content: '';
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* player.js sizes the canvas backing store to match this box in device
-     pixels; CSS just needs to reserve the space and center the drawing */
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 14px;
+  background-color: var(--color-off-white);
+  pointer-events: none;
 }
 
+/* comments.js appends .comment-marker elements directly into this
+   element (positioned via inline `style.left`, see comments.css for
+   their own sizing/color) — position:relative above is what makes
+   that `left: NN%` land correctly, same as the old canvas-overlay
+   layout. Marker elements are appended after this input in the DOM,
+   so they paint on top of it and remain clickable in their own small
+   footprint while the rest of the bar still belongs to the input. */
 .player__scrub-input {
   position: absolute;
   inset: 0;
@@ -208,15 +234,42 @@
   cursor: pointer;
 }
 
+/* Vertically center the comment markers on the bar and bump them 2px
+   larger in each dimension than the playhead thumb (3px x 14px), so
+   they read as distinct blocks rather than blending with the
+   playhead. This selector is more specific than a bare .comment-marker
+   rule in comments.css, so it wins regardless of which stylesheet
+   loads last — but we don't have comments.css, so if it sizes markers
+   some other way (padding, font-size, a background-image, etc.)
+   rather than width/height, let us know and we'll match that instead. */
+.player__timeline .comment-marker {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 16px;
+}
+
+/* The fill: dark teal track, accent teal from 0 to --progress (player.js
+   sets --progress: NN% on 'input' and on the playback-position tick,
+   the same pattern used for the volume slider's --fill). */
 .player__scrub-input::-webkit-slider-runnable-track {
-  background: transparent;
-  height: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent) var(--progress, 0%),
+    var(--color-teal-dark) var(--progress, 0%)
+  );
 }
 
 .player__scrub-input::-moz-range-track {
-  background: transparent;
-  height: 100%;
+  height: 1px;
+  background: var(--color-teal-dark);
   border: none;
+}
+
+.player__scrub-input::-moz-range-progress {
+  background-color: var(--color-accent);
+  height: 1px;
 }
 
 /* The thumb IS the playhead — a thin square-edged bar, not a round knob,
@@ -224,7 +277,8 @@
 .player__scrub-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 3px;
-  height: 100%;
+  height: 14px;
+  margin-top: -7px; /* center the 14px thumb on the 1px track */
   background-color: var(--color-off-white);
   border-radius: var(--radius);
   cursor: grab;
@@ -232,7 +286,7 @@
 
 .player__scrub-input::-moz-range-thumb {
   width: 3px;
-  height: 100%;
+  height: 14px;
   background-color: var(--color-off-white);
   border: none;
   border-radius: var(--radius);
@@ -269,7 +323,7 @@
 }
 
 .player__control-label {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-master);
   text-transform: uppercase;
   letter-spacing: var(--ls-ui);
   color: var(--color-text-muted);
