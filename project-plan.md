@@ -281,3 +281,31 @@ Added `--fs-master` to `base.css`'s token block, aliased to `--fs-base` (`1rem` 
 ### 10.4 Files touched this pass
 `index.html`, `css/base.css`, `css/player.css`, `css/playlist.css`, `js/player.js`. `css/comments.css`, `js/comments.js`, `css/chrome.css`, `js/panels.js`, `css/eq.css`, and every other file are unchanged — `js/comments.js` was reviewed (not edited) specifically to confirm the progress-bar redesign didn't break its `.player__timeline`/`.comment-marker` integration.
 
+---
+
+## 11. 3D Visualizer Go-Live + Repo Cleanup
+
+Continuing from Section 10, this pass finally activated the 3D visualizer (previously built but unplugged, per Section 8) and separately cleaned up the git repo and a credential exposure discovered along the way. No further player/comments UI changes this pass.
+
+### 11.1 3D visualizer activated
+- Swapped the `.device-visual` static-image base layer for `.visualizer3d` (the Three.js canvas from `visualizer3d.js`/`.css`, previously written but never wired in). `index.html` now loads a pinned Three.js import map (`three@0.160.0`) plus `js/visualizer3d.js` as a module script; `css/visualizer3d.css` was added to the stylesheet order.
+- `chrome.css`'s base-layer rule (`.player-stage .device-visual { position: absolute; inset: 0; z-index: 0; }`) was extended to also match `.player-stage .visualizer3d`, since that's what actually needs the stage-filling treatment now.
+- `visualizer3d.css`'s own container styling was stripped down: removed its standalone `background-color`/`border` (this is now a fill-the-stage base layer, not a bordered box) and removed the duplicate `position: absolute; inset: 0` once `chrome.css` took over owning that.
+- `.player-stage` picked up a solid black `background-color`, since the canvas briefly shows the stage background through it before the model loads (WebGL context created with `alpha: true`).
+- **Scrim removed**: `.player-core`'s teal gradient background (`linear-gradient(to top, color-mix(... var(--color-bg) ...), transparent)`, sitting behind the transport controls) was deleted outright — it was there to keep the transport row legible over whatever was in the visualizer layer, and read much more visibly once the visualizer's own background went transparent/black. **Open item carried forward:** with no scrim, the transport row now has no contrast backing of its own; if the model ever renders light-colored pixels behind those controls, legibility may suffer and this may need a lighter-touch fix (e.g. a text/icon drop-shadow) rather than reintroducing a full panel-wide gradient.
+- Header panel (`.panel--header` in `chrome.css`) got a background image (`assets/images/header-bg.jpg`, `cover`/`center`) layered under a ~55%-opacity black gradient for logo/link legibility, with the existing solid black `background-color` left in place as a fallback if the image fails to load. Path had to be `../assets/images/header-bg.jpg`, not `assets/images/header-bg.jpg` — `url()` in a stylesheet resolves relative to the stylesheet's own location (`css/`), not `index.html`'s.
+- Model file lives at `assets/models/model.glb`, matching `visualizer3d.js`'s existing `MODEL_URL` config — no code change needed there. The script already degrades gracefully (console warning only) if the model lacks the `Knob`/`EQReveal` meshes, so idle rotation + cursor parallax work even before the model is fully rigged for Phase 2's EQ-reveal/volume-knob behaviors.
+
+### 11.2 Repo cleanup: large assets + exposed credential
+- Added `.gitignore` (`assets/`, `.DS_Store`, `api/config.php`) — after a first pass where the fix was accidentally written as one space-separated line instead of one pattern per line, which meant only `assets/` was actually being honored.
+- `assets/` (audio, images, models — already git-tracked from earlier commits) was untracked going forward, then fully purged from git **history** via `git filter-repo --path assets --invert-paths --force`, run against a local backup copy first as a safety net (repo is local-only with a private GitHub remote, single contributor, so a history-rewriting force-push was low-risk here).
+- **Security finding:** `api/config.php` — containing the live MySQL database password — was discovered tracked in git history (not covered by `.gitignore` until this pass). Remediation, in order: (1) rotated the MySQL password via cPanel, (2) updated `config.php` locally and re-uploaded it directly to the server (it's no longer git-tracked, so it no longer deploys via git — manual sync only from here on), (3) confirmed the site still worked against the new credential, (4) *then* untracked and `filter-repo`-purged `config.php` from git history, so the leaked value in history was already invalid by the time it was scrubbed.
+- Remote was reattached as part of this (`git remote add origin ...`) — repo's actual name on GitHub is `slowvoid-site`, not `slowvoidPlayerSite` as the local folder is named; worth remembering they differ.
+
+### 11.3 Open item
+- Mid-cleanup, a local MAMP Pro refresh briefly showed a stale/old version of the site after the `filter-repo` history rewrite. Root cause wasn't conclusively identified (leading candidates: browser cache, PHP opcache — not a real file-state rollback), and files were confirmed correct/current independently afterward. Worth another look if it recurs.
+
+### 11.4 Files touched this pass
+`index.html`, `css/chrome.css`, `css/visualizer3d.css`, `.gitignore`. `js/visualizer3d.js` unchanged (config already pointed at the right model path). `api/config.php` changed (new password) but is no longer git-tracked. No comments/player/EQ files from Sections 9–10 were touched.
+
+
