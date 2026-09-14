@@ -79,7 +79,6 @@
   .eq__bands {
     overflow-x: visible;
     scroll-snap-type: none;
-    justify-content: space-between;
   }
 }
 
@@ -90,10 +89,6 @@
 
   .eq__slider {
     width: 128px; /* pre-rotation length matches the wrap's new height */
-  }
-
-  .eq__band:not(.eq__band--reset)::after {
-    top: calc(1.2em + var(--space-2) + 64px - 0.5px);
   }
 }
 

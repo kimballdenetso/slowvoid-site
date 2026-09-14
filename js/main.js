@@ -13,9 +13,10 @@
    Shared node graph (see project-plan.md Section 4):
      <audio> → MediaElementAudioSourceNode
              → [10x BiquadFilterNode chain]   (eq.js)
+             → [DJ filter: lowpass + wet/dry] (dj-filter.js, F/Q/Amount knobs)
              → GainNode                        (panner-volume.js, volume)
              → StereoPannerNode                (panner-volume.js, pan)
-             → AnalyserNode                    (feeds player.js's timing bar + eq-visualizer.js)
+             → AnalyserNode                    (feeds player.js's timing bar AND js/spectrum-analyzer.js's LED bar graph)
              → AudioContext.destination
 
    Cross-module events (all dispatched on `document`):
@@ -29,7 +30,8 @@
 
 import { initPlayer } from './player.js';
 import { initEQ } from './eq.js';
-import { initEQVisualizer } from './eq-visualizer.js';
+import { initFilter } from './dj-filter.js';
+import { initSpectrumAnalyzer } from './spectrum-analyzer.js';
 import { initPannerVolume } from './panner-volume.js';
 import { initPlaylist } from './playlist.js';
 import './comments.js'; // self-initializing: wires its own DOM listeners on import
@@ -62,15 +64,32 @@ function buildAudioGraph() {
   const analyserNode = audioContext.createAnalyser();
   analyserNode.fftSize = 2048;
 
+  // A second, separate tap for the spectrum visualizer, tuned
+  // independently from the analyser above (which player.js's timing
+  // bar also relies on) — see js/spectrum-analyzer.js for what these
+  // settings control. Keeping this as its own node means retuning the
+  // visualizer's responsiveness can never affect anything else that
+  // reads analyserNode.
+  const spectrumAnalyserNode = audioContext.createAnalyser();
+  spectrumAnalyserNode.fftSize = 2048;
+  spectrumAnalyserNode.smoothingTimeConstant = 0.35; // default is 0.8 — much snappier
+  spectrumAnalyserNode.minDecibels = -60;              // was -40 — a bit more headroom below the floor
+  spectrumAnalyserNode.maxDecibels = -20;
+
   const eq = initEQ(audioContext);
+  const filter = initFilter(audioContext);
   const levels = initPannerVolume(audioContext);
 
   sourceNode.connect(eq.inputNode);
-  eq.outputNode.connect(levels.inputNode);
+  eq.outputNode.connect(filter.inputNode);
+  filter.outputNode.connect(levels.inputNode);
   levels.outputNode.connect(analyserNode);
+  levels.outputNode.connect(spectrumAnalyserNode); // parallel tap — doesn't need its own
+                                                     // connection onward to produce sound,
+                                                     // analyserNode already routes to destination
   analyserNode.connect(audioContext.destination);
 
-  return { analyserNode, eq, levels };
+  return { analyserNode, spectrumAnalyserNode, eq, filter, levels };
 }
 
 /**
@@ -155,7 +174,7 @@ function init() {
 
   const eqCanvas = document.querySelector('.eq__visualizer-canvas');
   if (eqCanvas) {
-    initEQVisualizer(eqCanvas, graph.eq.filters);
+    initSpectrumAnalyzer(eqCanvas, graph.spectrumAnalyserNode);
   }
 
   loadTrack(currentTrackIndex);

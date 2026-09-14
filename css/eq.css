@@ -6,17 +6,17 @@
    Depends on base.css for tokens and the .btn component. No colors or
    font-families are hardcoded here.
 
+   No title, no on/off toggle, no border/background — the EQ is
+   considered "on" whenever #panel-eq is open (its own panel-toggle
+   button in the player features row controls that; see js/eq.js,
+   which listens to that button instead of carrying a second one
+   in-panel), and it floats directly over the stage like the tracklist
+   card. No dB readout either — just the sliders and freq labels.
+
    Expected markup contract (built in index.html, wired up by eq.js and
    eq-visualizer.js):
 
    <section class="eq" aria-label="10-band equalizer">
-
-     <div class="eq__header">
-       <h3 class="eq__title">Equalizer</h3>
-       <button class="btn eq__toggle" data-action="eq-toggle" aria-pressed="false">
-         EQ
-       </button>
-     </div>
 
      <div class="eq__visualizer">
        <canvas class="eq__visualizer-canvas"></canvas>
@@ -24,7 +24,6 @@
 
      <div class="eq__bands" role="group" aria-label="Frequency bands">
        <div class="eq__band">
-         <output class="eq__gain-value" for="band-31">0dB</output>
          <input
            class="eq__slider" id="band-31" type="range"
            min="-12" max="12" step="0.5" value="0"
@@ -44,10 +43,9 @@
 
    </section>
 
-   NOTE: eq.js dispatches 'eqactivated' / 'eqdeactivated' custom events on
-   toggle (consumed by visualizer3d.js per the project plan) — that's JS
-   wiring, not CSS, but the .eq__toggle element below is what the event
-   fires from.
+   NOTE: eq.js dispatches 'eqactivated' / 'eqdeactivated' custom events
+   when #panel-eq's own toggle opens/closes it (consumed by
+   visualizer3d.js per the project plan) — that's JS wiring, not CSS.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -58,53 +56,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  width: 100%;
+  width: max-content; /* was 100% — same shrink-to-fit collapse issue
+    as .eq-meter above, just not visibly broken here since the slider/
+    button children don't carry max-width:100% the way canvas/img do */
   padding: var(--space-3);
-  background-color: var(--color-bg-surface);
-  border: var(--border-width) solid var(--color-border);
 }
 
-.eq__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
+/* .eq__header, .eq__title, and .eq__toggle rules removed along with
+   those elements — the EQ no longer has its own title or a dedicated
+   on/off button. It's now considered "on" whenever #panel-eq is open
+   (see js/eq.js, which listens to that panel's own toggle button
+   instead of carrying a second one internally). */
 
-.eq__title {
-  font-size: var(--fs-md);
-  color: var(--color-text);
-}
-
-/* .eq__toggle is otherwise just a .btn — off by default (outline only),
-   fills solid teal via base.css's [aria-pressed="true"] rule once eq.js
-   flips the attribute on. No extra color rules needed here. */
-.eq__toggle {
-  min-width: 4.5rem;
-}
-
-/* --------------------------------------------------------------------------
-   2. FREQUENCY-RESPONSE VISUALIZER
-   A single canvas spanning the full width, redrawn by eq-visualizer.js
-   whenever a band's gain changes (via getFrequencyResponse() across the
-   filter chain) and/or showing a live spectrum overlay from the shared
-   AnalyserNode. CSS only reserves the box.
-   -------------------------------------------------------------------------- */
-
-.eq__visualizer {
-  position: relative;
-  width: 100%;
-  height: 48px;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-teal-dark);
-}
-
-.eq__visualizer-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
+/* The frequency-response visualizer that used to live here (an
+   .eq__visualizer wrapper + this section's .eq__visualizer-canvas
+   rules) was moved out into its own #panel-spectrum card — see
+   css/chrome.css's "STANDALONE SPECTRUM ANALYZER" section and
+   js/spectrum-analyzer.js. Those old rules are removed rather than
+   left dead: they matched .eq__visualizer-canvas by class name alone
+   with no scoping, which was colliding with the real canvas (it
+   reuses that class) and forcing it out of flow via
+   position:absolute — collapsing its container to 0 width. */
 
 /* --------------------------------------------------------------------------
    3. BAND ROW
@@ -116,7 +88,8 @@
 
 .eq__bands {
   display: flex;
-  /* gap: var(--space-3); */
+  justify-content: center;
+  gap: 2px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
@@ -133,20 +106,15 @@
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
-  width: 2.75rem; /* >= 44px tap-target width per band column */
+  width: 1.375rem; /* half the original 2.75rem tap-target width, per request */
   scroll-snap-align: start;
 }
 
-.eq__gain-value {
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  min-height: 1.2em; /* stable layout whether showing "0dB" or "-12dB" */
-}
+/* .eq__gain-value rule removed along with the dB readout element. */
 
 .eq__freq-label {
   font-size: var(--fs-xs);
-  color: var(--color-text-muted);
+  color: var(--color-accent);
   text-transform: uppercase;
 }
 
@@ -167,7 +135,7 @@
 
 .eq__slider-wrap {
   position: relative;
-  width: 44px;    /* tap target, matches the wrap's own footprint */
+  width: 22px;    /* half the original 44px thickness, per request */
   height: 96px;
   overflow: hidden;
   /* All pointer interaction is handled here in JS (eq.js), not by the
@@ -185,7 +153,7 @@
      height becomes the visible vertical THICKNESS — swapped from the
      wrap's own dimensions on purpose. */
   width: 96px;
-  height: 44px;
+  height: 22px;
   margin: 0;
   position: absolute;
   top: 50%;
@@ -217,13 +185,13 @@
     var(--color-accent) var(--fill, 50%),
     var(--color-teal-dark) var(--fill, 50%)
   );
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-teal-dark);
 }
 
 .eq__slider::-moz-range-track {
   height: 4px;
   background-color: var(--color-teal-dark);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-teal-dark);
 }
 
 .eq__slider::-moz-range-progress {
@@ -263,26 +231,8 @@
   outline-offset: 2px;
 }
 
-/* Zero-gain reference tick, centered on the track — every band starts
-   flat, so this marks "no change" the same way the pan control marks
-   center. Purely decorative, so it's excluded from the a11y tree. */
-.eq__band {
-  position: relative;
-}
-
-.eq__band:not(.eq__band--reset)::after {
-  content: "";
-  position: absolute;
-  /* vertically centered on the 96px slider track, which sits below
-     the gain readout (see gap/min-height above this element in DOM flow) */
-  top: calc(1.2em + var(--space-2) + 48px - 0.5px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 12px;
-  height: 1px;
-  background-color: var(--color-text-muted);
-  pointer-events: none;
-}
+/* Zero-gain reference tick removed per request — bands no longer show
+   a marker for the flat/0dB position, just the slider and freq label. */
 
 /* --------------------------------------------------------------------------
    6. RESET CONTROL

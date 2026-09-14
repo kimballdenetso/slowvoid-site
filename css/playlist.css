@@ -8,10 +8,16 @@
    than hand-written per track, so adding/removing tracks in main.js's
    TRACKS array is the only edit needed.
 
+   No title, no border/background — this floats directly over the
+   player-stage image with only the track rows themselves visible.
+   Container sizing (shrink-to-fit, lower-right position, always-on
+   visibility instead of toggle-gated) is handled by the
+   #panel-tracklist override in css/chrome.css; everything in this file
+   is the look of the rows themselves.
+
    Expected markup contract (built by playlist.js):
 
    <section class="playlist" aria-label="Track list">
-     <h3 class="playlist__title">Tracks</h3>
      <ul class="playlist__list" role="list">
        <li class="playlist__item">
          <button class="playlist__track-btn" type="button" aria-current="true">
@@ -30,14 +36,8 @@
 .playlist {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-4);
-}
-
-.playlist__title {
-  font-size: var(--fs-master);
-  color: var(--color-text);
+  width: max-content; /* hug the widest track row instead of filling the stage */
+  max-width: 100%;
 }
 
 .playlist__list {
@@ -52,10 +52,14 @@
 .playlist__track-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
-  min-height: 44px; /* tap target */
-  padding: var(--space-2) var(--space-2);
+  /* Tightened from the original 44px tap-target minimum per request —
+     rows now pack closer together. Worth revisiting if this list is
+     ever the primary way touch visitors pick a track, since sub-44px
+     targets are harder to hit accurately. */
+  min-height: 28px;
+  padding: 2px var(--space-2);
   background: transparent;
   border: none;
   border-radius: var(--radius);

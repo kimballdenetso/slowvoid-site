@@ -1,16 +1,20 @@
 /* ==========================================================================
    EQ.JS
    Builds the 10-band BiquadFilterNode chain and generates the band UI
-   (sliders + gain readouts + freq labels) into .eq__bands, matching the
-   markup contract documented at the top of css/eq.css.
+   (sliders + freq labels) into .eq__bands, matching the markup contract
+   documented at the top of css/eq.css.
 
    The ten bands are generated here from FREQUENCIES rather than
    hand-written ten times in index.html — one source of truth for the
    band list, and adding/removing a band later is a one-line change.
 
-   Fires 'eqactivated' / 'eqdeactivated' on `document` when the EQ is
-   toggled on/off — visualizer3d.js listens for these to reveal/hide a
-   piece of the 3D model (see project-plan.md Section 3.4).
+   No dedicated in-panel on/off control — activation now follows
+   #panel-eq's own open/closed state, driven by the panel-toggle button
+   in the player features row (panels.js owns opening/closing the
+   panel itself; this module just listens to the same button to also
+   flip the audio bypass). Fires 'eqactivated' / 'eqdeactivated' on
+   `document` when that happens — visualizer3d.js listens for these to
+   reveal/hide a piece of the 3D model (see project-plan.md Section 3.4).
    ========================================================================== */
 
 const FREQUENCIES = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -23,9 +27,14 @@ const FREQUENCY_LABELS = ['31', '62', '125', '250', '500', '1k', '2k', '4k', '8k
 export function initEQ(audioContext) {
   const eqEl = document.querySelector('.eq');
   const bandsEl = eqEl.querySelector('.eq__bands');
-  const toggleBtn = eqEl.querySelector('.eq__toggle');
   const resetBtn = eqEl.querySelector('[data-action="eq-reset"]');
   const resetColumn = bandsEl.querySelector('.eq__band--reset');
+  // No in-panel on/off button anymore — the EQ is "on" whenever its
+  // floating panel is open, so we hook the same toggle button
+  // panels.js already wires up for showing/hiding #panel-eq, rather
+  // than carrying a second control that does something similar.
+  const panelEl = document.getElementById('panel-eq');
+  const panelToggleBtn = document.querySelector('[data-panel-toggle="eq"]');
 
   // --- Build the filter chain -------------------------------------------
   const filters = FREQUENCIES.map((freq) => {
@@ -43,16 +52,10 @@ export function initEQ(audioContext) {
 
   // --- Build the band UI ---------------------------------------------
   const sliders = [];
-  const gainReadouts = [];
 
   FREQUENCIES.forEach((freq, i) => {
     const band = document.createElement('div');
     band.className = 'eq__band';
-
-    const gainValue = document.createElement('output');
-    gainValue.className = 'eq__gain-value';
-    gainValue.textContent = '0dB';
-    gainValue.setAttribute('for', `band-${freq}`);
 
     const sliderWrap = document.createElement('div');
     sliderWrap.className = 'eq__slider-wrap';
@@ -84,7 +87,6 @@ export function initEQ(audioContext) {
     slider.addEventListener('input', () => {
       const value = parseFloat(slider.value);
       filters[i].gain.value = value;
-      gainValue.textContent = `${value > 0 ? '+' : ''}${value}dB`;
       // Same fill technique as the volume slider (player.css /
       // panner-volume.js) — percentage of this slider's own min..max
       // range, since the rotate transform doesn't change how the
@@ -131,11 +133,10 @@ export function initEQ(audioContext) {
     sliderWrap.addEventListener('pointercancel', endDrag);
 
     sliderWrap.appendChild(slider);
-    band.append(gainValue, sliderWrap, freqLabel);
+    band.append(sliderWrap, freqLabel);
     bandsEl.insertBefore(band, resetColumn);
 
     sliders.push(slider);
-    gainReadouts.push(gainValue);
   });
 
   // --- Activate / deactivate ------------------------------------------
@@ -147,7 +148,6 @@ export function initEQ(audioContext) {
 
   function setActive(active) {
     isActive = active;
-    toggleBtn.setAttribute('aria-pressed', String(active));
 
     if (active) {
       filters.forEach((filter, i) => {
@@ -164,7 +164,15 @@ export function initEQ(audioContext) {
     bandsEl.dispatchEvent(new CustomEvent('eq:changed', { bubbles: true }));
   }
 
-  toggleBtn.addEventListener('click', () => setActive(!isActive));
+  if (panelToggleBtn && panelEl) {
+    panelToggleBtn.addEventListener('click', () => {
+      // panels.js's own click listener on this same button (attached
+      // earlier, before this module runs) has already flipped
+      // #panel-eq's open/closed state by the time this fires, so read
+      // it directly rather than tracking a separate on/off flag here.
+      setActive(panelEl.classList.contains('is-open'));
+    });
+  }
 
   resetBtn.addEventListener('click', () => {
     filters.forEach((filter) => {
@@ -173,9 +181,6 @@ export function initEQ(audioContext) {
     sliders.forEach((slider) => {
       slider.value = '0';
       slider.style.setProperty('--fill', '50%');
-    });
-    gainReadouts.forEach((output) => {
-      output.textContent = '0dB';
     });
     savedGains = filters.map(() => 0);
     bandsEl.dispatchEvent(new CustomEvent('eq:changed', { bubbles: true }));

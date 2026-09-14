@@ -308,4 +308,28 @@ Continuing from Section 10, this pass finally activated the 3D visualizer (previ
 ### 11.4 Files touched this pass
 `index.html`, `css/chrome.css`, `css/visualizer3d.css`, `.gitignore`. `js/visualizer3d.js` unchanged (config already pointed at the right model path). `api/config.php` changed (new password) but is no longer git-tracked. No comments/player/EQ files from Sections 9–10 were touched.
 
+---
+
+## 12. Regression: EQ / Playlist / Spectrum Analyzer Went Dark
+
+Discovered right after Section 11's visualizer work: the EQ, track list, and spectrum analyzer all stopped rendering at once. Root cause turned out to be one uncaught exception with a wide blast radius, compounded by a second, unrelated file-drift issue found while chasing it down.
+
+### 12.1 Root cause
+`js/eq.js`'s `initEQ()` looked up `.eq__toggle` (the EQ's flat/bypass button) via `eqEl.querySelector('.eq__toggle')` and called `.addEventListener` on it unconditionally. At some point before this pass, `index.html`'s EQ panel markup lost its `.eq__header` block entirely — the `<h3 class="eq__title">Equalizer</h3>` and the `.eq__toggle` button both — leaving only the reset-button column. (The track list's `<h3 class="playlist__title">Tracks</h3>` was separately dropped from the same file around the same time.) With `toggleBtn` null, `initEQ()` threw a `TypeError` (`Cannot read properties of null (reading 'addEventListener')`), which propagated up through `buildAudioGraph()` and aborted `init()` in `main.js` partway through — so `initPlaylist()` and the spectrum-canvas setup, both called later in the same function, never ran. Three symptoms, one uncaught throw.
+
+Separately, `main.js` still imported `initEQVisualizer` from the old `js/eq-visualizer.js`, while a newer `js/spectrum-analyzer.js` (added alongside the DJ filter work, see Section 11/the `c4f05cd` commit) exported a differently-named, differently-signed `initSpectrumAnalyzer(canvas, analyserNode)` — reading live playback levels off a dedicated `AnalyserNode` rather than the EQ's filter gains. This wasn't yet the active bug (the eq.js crash was masking it), but would have surfaced next.
+
+### 12.2 Fix
+- Restored the missing `.eq__header` (title + `.eq__toggle` button) into `index.html`'s `#panel-eq` markup, and restored `<h3 class="playlist__title">Tracks</h3>` in `#panel-tracklist`.
+- Re-pointed `main.js` at `spectrum-analyzer.js`: swapped the import, and switched the call site from `initEQVisualizer(eqCanvas, graph.eq.filters)` to `initSpectrumAnalyzer(eqCanvas, graph.spectrumAnalyserNode)` — using a **second, dedicated `AnalyserNode`** (own `fftSize`, `smoothingTimeConstant: 0.35`, `minDecibels: -60`, `maxDecibels: -20`) so tuning the visualizer's responsiveness can never affect the player's timing-bar analyser.
+- In the same pass, confirmed `js/dj-filter.js` (added in the same earlier commit as the spectrum analyzer, per Section 11) was fully wired into the node graph — `eq.outputNode → filter.inputNode`, `filter.outputNode → levels.inputNode` — via `initFilter(audioContext)` in `buildAudioGraph()`. It had visually existed in the UI but was previously confirmed disconnected from audio in an intermediate version of `main.js`; the corrected version restores the real signal path.
+- `js/eq.js` also picked up defensive null-guards around every `toggleBtn` use (checked working-tree diffs identified the *known-good* `eq.js`/`main.js`/`panels.js`/`eq.css`/`playlist.css`/`responsive.css` were sitting in a local pre-cleanup backup folder; those known-good copies were restored wholesale rather than hand-patched further, once confirmed they didn't regress the DJ-filter/spectrum-analyzer wiring or the Section 11 visualizer work).
+- `js/eq-visualizer.js` is now unused (superseded by `spectrum-analyzer.js`) but was left in place rather than deleted.
+
+### 12.3 Diagnostic approach (for next time)
+Comparing the live working tree against timestamped local backup folders (`diff -rq --exclude=.git backupN currentDir`) isolated exactly which files had — and hadn't — actually changed, which was faster than guessing from symptoms alone. Browser DevTools' Console tab (not just Network) was what actually surfaced the real error; caching was a reasonable first suspect given a prior unrelated caching scare in Section 11, but wasn't the cause here.
+
+### 12.4 Files touched this pass
+`index.html` (EQ header + playlist title restored), `js/eq.js`, `js/main.js`, `js/panels.js`, `css/eq.css`, `css/playlist.css`, `css/responsive.css`. `css/chrome.css`, `css/visualizer3d.css`, `js/dj-filter.js`, `css/dj-filter.css`, `js/spectrum-analyzer.js` confirmed unaffected/unchanged.
+
 
