@@ -41,9 +41,23 @@
 }
 
 /* Header panel: black box, square top (flush with the viewport edge),
-   rounded only on the bottom two corners. */
+   rounded only on the bottom two corners. Background image is applied
+   as a gradient-over-image on the same layer, rather than a separate
+   ::before/pseudo-element, so it stays clipped to the panel's own
+   border-radius (the .panel rule above already sets overflow:hidden,
+   but background-image respects border-radius directly, no extra
+   clipping needed). The gradient uses --color-black at partial opacity
+   rather than a flat scrim, so the image reads through at the edges
+   while staying dark enough behind the logo/link grid to keep them
+   legible regardless of what's in the image. */
 .panel--header {
   background-color: var(--color-black);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--color-black) 55%, transparent),
+                     color-mix(in srgb, var(--color-black) 55%, transparent)),
+    url("../assets/images/header-bg.jpg");
+  background-size: cover;
+  background-position: center;
   border-radius: 0 0 var(--panel-radius) var(--panel-radius);
 }
 
@@ -63,8 +77,12 @@
   overflow: hidden;
 }
 
-/* Visualizer fills the whole stage as the base layer */
-.player-stage .device-visual {
+/* Visualizer fills the whole stage as the base layer. .device-visual
+   is the old static-image layer; .visualizer3d is the interactive 3D
+   model that replaced it (see visualizer3d.css for its own sizing —
+   this just handles the shared stage-layer position/z-index). */
+.player-stage .device-visual,
+.player-stage .visualizer3d {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -86,7 +104,6 @@
   bottom: 0;
   z-index: 2;
   padding: var(--space-4);
-  background: linear-gradient(to top, color-mix(in srgb, var(--color-bg) 80%, transparent), transparent);
 }
 
 /* Toggle bar for opening/closing the floating overlay cards */
@@ -118,7 +135,7 @@
   background-color: color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
   backdrop-filter: blur(6px);
   border: var(--border-width) solid var(--color-border);
-  border-radius: var(--panel-radius);
+  border-radius: 0;
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
@@ -133,13 +150,103 @@
   visibility: visible;
 }
 
-/* Volume/spectrum cards are small controls, not lists — let them size
-   to content instead of filling the whole stage */
-#panel-volume.floating-panel,
-#panel-spectrum.floating-panel {
+/* Volume card is a small control, not a list — let it size to content
+   instead of filling the whole stage */
+#panel-volume.floating-panel {
   bottom: auto;
   height: auto;
   max-height: 40%;
+}
+
+/* Spectrum card: the canvas draws its own fixed-size LED block grid
+   (see js/spectrum-analyzer.js), so the card should hug that exact
+   content rather than stretching full-width/full-height like the
+   default floating-panel, and — same treatment as the tracklist/EQ
+   cards — no border or background of its own. */
+#panel-spectrum.floating-panel {
+  left: auto;
+  right: var(--space-4);
+  bottom: auto;
+  width: auto;
+  max-width: 92%;
+  height: auto;
+  max-height: 40%;
+
+  background-color: transparent;
+  backdrop-filter: none;
+  border: none;
+}
+
+/* EQ card: the inner .eq element (css/eq.css) no longer carries its
+   own border/background, so the outer .floating-panel's border/blur
+   was showing through as a second, redundant box around it — removed
+   here for the same fully chrome-free look as the tracklist card.
+   Position/size are left as the shared full-stage floating-panel
+   default; only the border/background/blur are stripped. */
+#panel-eq.floating-panel {
+  background-color: transparent;
+  backdrop-filter: none;
+  border: none;
+
+  /* Was stretched full-stage like the other overlays (left/right/top/
+     bottom insets from the base .floating-panel rule), which reached
+     down far enough to sit over the LIST/EQ/VIZ/FILTER toggle row and
+     eat their clicks while open. Sized to content instead — same
+     top-right anchor, auto height, as the volume/spectrum cards
+     already use safely. */
+  left: auto;
+  right: var(--space-4);
+  bottom: auto;
+  width: auto;
+  max-width: 92%;
+  height: auto;
+  max-height: 40%;
+}
+
+/* Filter card: same fully chrome-free treatment as the EQ/tracklist
+   cards (no border, no background/blur of its own — the panel itself
+   is transparent; see css/dj-filter.css for the knobs' own outlines),
+   sized to content, but anchored bottom-LEFT instead of the EQ's
+   top-right, so it doesn't collide with the tracklist/EQ cards when
+   more than one is opened at once. */
+#panel-filter.floating-panel {
+  left: var(--space-4);
+  right: auto;
+  top: auto;
+  bottom: calc(96px + var(--space-5)); /* clears the player-core transport, same offset as #panel-tracklist */
+  width: auto;
+  max-width: 92%;
+  height: auto;
+  max-height: 40%;
+
+  background-color: transparent;
+  backdrop-filter: none;
+  border: none;
+  padding: 0;
+}
+
+/* Tracklist card: starts already .is-open in the markup (see
+   index.html) so it's visible on load like a normal floating panel
+   that's already been opened — the LIST button/panels.js toggle it
+   exactly like every other panel from there (open/closed both still
+   work; this isn't bypassing that state machine, just seeding it).
+   What IS overridden here is the look: no border or fill, square
+   corners, and sized to its content instead of filling the stage
+   (see css/playlist.css for the row styling itself). */
+#panel-tracklist.floating-panel {
+  left: auto;
+  top: auto;
+  right: var(--space-4);
+  bottom: calc(96px + var(--space-5)); /* clears the player-core transport */
+  width: auto;
+  max-width: 60%;
+  height: auto;
+  max-height: 40%;
+
+  background-color: transparent;
+  backdrop-filter: none;
+  border: none;
+  padding: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -377,22 +484,32 @@
 }
 
 /* --------------------------------------------------------------------------
-   3. STANDALONE EQ LEVEL METER
-   Just the small canvas from eq-visualizer.js, pulled out of the main
-   .eq section (eq.js/main.js query it by class globally, not scoped to
+   3. STANDALONE SPECTRUM ANALYZER
+   The canvas from js/spectrum-analyzer.js, pulled out of the main .eq
+   section (eq.js/main.js query it by class globally, not scoped to
    .eq, so this works without any JS changes) so it can sit above the
    device image per the mockup instead of inside the EQ panel itself.
+   Sized to its own fixed block-grid resolution by the JS itself (10
+   bands x 15x5px blocks, 2px gaps) — this just centers it rather than
+   stretching it to fill the box, which would blur/distort the blocks.
    -------------------------------------------------------------------------- */
 
 .eq-meter {
   position: relative;
-  width: 100%;
-  height: 48px;
+  width: max-content; /* was 100% — inside a shrink-to-fit panel (see
+    #panel-spectrum in chrome.css's floating-panel section) a
+    percentage width here creates a circular reference that resolves
+    to 0, which then clamps the canvas to 0 width too via base.css's
+    global `canvas { max-width: 100% }` reset. max-content sizes this
+    to its own contents instead, breaking that cycle. */
+  height: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .eq-meter .eq__visualizer-canvas {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
 }
 
 /* --------------------------------------------------------------------------

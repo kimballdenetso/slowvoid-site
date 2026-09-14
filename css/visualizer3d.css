@@ -30,9 +30,27 @@
      breakpoints where there's vertical room to spare. */
   aspect-ratio: 1 / 1;
   max-height: 60vh;
-  background-color: var(--color-bg);
-  border: var(--border-width) solid var(--color-border);
   overflow: hidden;
+}
+
+/* Now confirmed against chrome.css: .player-stage has no background of
+   its own, and ".player-stage .device-visual, .player-stage
+   .visualizer3d" there handles position/inset/z-index for this element
+   as the stage's base layer. This block just: (1) gives the stage a
+   solid black backdrop, since it's briefly visible through the canvas
+   before the model loads and while alpha:true lets the WebGL context
+   show through; (2) overrides the standalone aspect-ratio/max-height
+   above so the model fills the absolutely-positioned box instead of
+   sizing itself. */
+.player-stage {
+  background-color: #000;
+}
+
+.player-stage > .visualizer3d {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+  max-height: none;
 }
 
 .visualizer3d__canvas {
