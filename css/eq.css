@@ -53,6 +53,7 @@
    -------------------------------------------------------------------------- */
 
 .eq {
+  position: relative; /* anchors .eq__band--reset flush to this section's top-right corner */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -60,6 +61,9 @@
     as .eq-meter above, just not visibly broken here since the slider/
     button children don't carry max-width:100% the way canvas/img do */
   padding: var(--space-3);
+  border: var(--border-width) solid var(--color-teal);
+  border-radius: 0;
+  backdrop-filter: blur(10px);
 }
 
 /* .eq__header, .eq__title, and .eq__toggle rules removed along with
@@ -93,7 +97,12 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding-bottom: var(--space-2); /* room for scrollbar without clipping */
+  /* No extra bottom padding here anymore — it was stacking on top of
+     .eq's own uniform padding and made the section look bottom-heavy.
+     If a scrollbar reappears (mobile-first horizontal scroll, before
+     responsive.css turns it off) and clips against .eq's border, add
+     padding-bottom back to .eq itself instead so all four sides stay
+     equal. */
 }
 
 /* --------------------------------------------------------------------------
@@ -104,7 +113,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1); /* was --space-2 — tighter to the label per request */
   flex-shrink: 0;
   width: 1.375rem; /* half the original 2.75rem tap-target width, per request */
   scroll-snap-align: start;
@@ -136,7 +145,7 @@
 .eq__slider-wrap {
   position: relative;
   width: 22px;    /* half the original 44px thickness, per request */
-  height: 96px;
+  height: 60px;   /* fixed length, per request */
   overflow: hidden;
   /* All pointer interaction is handled here in JS (eq.js), not by the
      native input's own click/drag handling — see the note on
@@ -152,7 +161,7 @@
   /* Authored pre-rotation: width becomes the visible vertical LENGTH,
      height becomes the visible vertical THICKNESS — swapped from the
      wrap's own dimensions on purpose. */
-  width: 96px;
+  width: 60px;
   height: 22px;
   margin: 0;
   position: absolute;
@@ -241,8 +250,23 @@
    -------------------------------------------------------------------------- */
 
 .eq__band--reset {
-  justify-content: flex-end;
-  padding-bottom: 2px; /* optical alignment with slider thumbs, not text */
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: auto;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+/* Visible on hover, and on focus-within so keyboard users tabbing to
+   the button itself don't lose it — opacity:0 alone would otherwise
+   leave it focusable-but-invisible. */
+.eq:hover .eq__band--reset,
+.eq:focus-within .eq__band--reset {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .eq__band--reset::after {

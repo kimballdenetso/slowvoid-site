@@ -144,11 +144,6 @@
         <nav class="site-header__links" aria-label="Listen and follow">
           <!-- social.js renders one .btn link per platform here -->
         </nav>
-        <!-- Opens the admin comment editor in the right side panel
-             (desktop only — see that panel's markup below). Same .btn
-             styling as every other button on the site; admin.js wires
-             the click handler. -->
-        <button class="btn admin-toggle" type="button" id="admin-toggle" aria-expanded="false" aria-controls="admin-panel">Admin</button>
       </header>
     </div>
 
@@ -158,84 +153,28 @@
     <div class="panel panel--player">
       <main class="player-panel-inner">
 
-        <div class="player-stage">
+        <!-- BASE LAYER: interactive 3D model, now the background for
+             the whole player panel (not just the compact controls
+             strip below) — replacing the static device.png. Markup
+             contract per visualizer3d.css's header comment. -->
+        <section class="visualizer3d" aria-hidden="true">
+          <canvas class="visualizer3d__canvas"></canvas>
+        </section>
 
-          <!-- BASE LAYER: interactive 3D model, replacing the static
-               device.png (see visualizer3d.js/css). Markup contract per
-               visualizer3d.css's header comment. -->
-          <section class="visualizer3d" aria-hidden="true">
-            <canvas class="visualizer3d__canvas"></canvas>
-          </section>
+        <!-- TOP CHILD SECTION: every feature panel (tracklist/EQ/
+             filter/volume/spectrum), grouped here as "features" for
+             easy reference as a set. Each one keeps its own existing
+             id/data-panel/positioning — js/panels.js and js/eq.js find
+             them exactly the same way as before — this is a grouping
+             wrapper only, not a rename of those. It isn't positioned
+             itself, so each child's own position:absolute still
+             resolves against .player-panel-inner (this wrapper's
+             nearest positioned ancestor) exactly as it did against
+             .player-stage before. -->
+        <div class="features">
 
-          <!-- BASE LAYER: persistent playback core (transport/scrubber)
-               — always visible, sits above the visualizer, everything
-               else floats on top of/around it. The current-track
-               display that used to live here was removed — the
-               track list's teal-highlighted row is now the only
-               "what's playing" indicator (see #panel-tracklist below).
-               main.js now null-checks before writing to
-               .player__title/.player__artist, so their absence here
-               is safe (see js/main.js's setTextIfPresent). -->
-          <div class="player-core">
-
-            <!-- PLAYER: transport + feature toggles (top row) and
-                 progress bar (bottom row) — see css/player.css.
-                 player.js finds the buttons/scrub-input/time span
-                 below via a scoped query on this .player element.
-                 Feature-toggle buttons open/close the floating cards
-                 below; that show/hide behavior is handled by
-                 js/panels.js (flips aria-expanded/.is-open only — it
-                 doesn't touch any audio/player logic), unchanged from
-                 before other than which panels are reachable here. -->
-            <section class="player" aria-label="Music player">
-
-              <div class="player__row player__row--top">
-                <div class="player__transport" role="group" aria-label="Playback controls">
-                  <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
-                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM20 4L9 12l11 8z"/></svg>
-                  </button>
-                  <button class="btn btn--icon" data-action="play" aria-label="Play" aria-pressed="false">
-                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
-                  </button>
-                  <button class="btn btn--icon" data-action="pause" aria-label="Pause">
-                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
-                  </button>
-                  <button class="btn btn--icon" data-action="stop" aria-label="Stop">
-                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>
-                  </button>
-                  <button class="btn btn--icon" data-action="next" aria-label="Next track">
-                    <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2v16h-2zM4 4l11 8-11 8z"/></svg>
-                  </button>
-                </div>
-
-                <div class="player__features" role="group" aria-label="Player features">
-                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="tracklist" aria-expanded="true" aria-controls="panel-tracklist">LIST</button>
-                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq">EQ</button>
-                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum">VIZ</button>
-                  <!-- Stub: no panel content/wiring yet, see #panel-filter below. -->
-                  <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="filter" aria-expanded="false" aria-controls="panel-filter">FILTER</button>
-                </div>
-              </div>
-
-              <div class="player__row player__row--progress">
-                <div class="player__timeline">
-                  <input
-                    class="player__scrub-input"
-                    type="range"
-                    min="0" max="100" value="0" step="0.1"
-                    aria-label="Seek"
-                  />
-                  <!-- comments.js renders its timestamp markers into this
-                       timeline; left in place unchanged from before. -->
-                </div>
-                <span class="player__time" data-time="total">0:00</span>
-              </div>
-
-            </section>
-          </div>
-
-          <!-- FLOATING OVERLAY: track list (see css/playlist.css —
-               items generated by playlist.js) -->
+          <!-- FEATURE: track list (see css/playlist.css — items
+               generated by playlist.js) -->
           <div class="floating-panel is-open" id="panel-tracklist" data-panel="tracklist">
             <section class="playlist" aria-label="Track list">
               <ul class="playlist__list" role="list">
@@ -244,7 +183,7 @@
             </section>
           </div>
 
-          <!-- FLOATING OVERLAY: EQ (see css/eq.css for the full markup
+          <!-- FEATURE: EQ (see css/eq.css for the full markup
                contract — bands are generated into .eq__bands by eq.js,
                only the reset button's column exists up front) -->
           <div class="floating-panel" id="panel-eq" data-panel="eq">
@@ -259,7 +198,7 @@
             </section>
           </div>
 
-          <!-- FLOATING OVERLAY: DJ-style filter — three knobs (Amount/
+          <!-- FEATURE: DJ-style filter — three knobs (Amount/
                Frequency/Q) driving js/dj-filter.js's lowpass↔highpass
                sweep + wet-dry blend, spliced into the audio chain
                between the EQ and volume/pan stages (see js/main.js's
@@ -296,8 +235,8 @@
             </section>
           </div>
 
-          <!-- FLOATING OVERLAY: volume / balance — looked up globally
-               (by panner-volume.js), unchanged markup -->
+          <!-- FEATURE: volume / balance — looked up globally (by
+               panner-volume.js), unchanged markup -->
           <div class="floating-panel" id="panel-volume" data-panel="volume">
             <div class="player__levels" aria-label="Volume and balance">
               <div class="player__control">
@@ -313,9 +252,9 @@
             </div>
           </div>
 
-          <!-- FLOATING OVERLAY: spectrum analyzer — same
-               .eq__visualizer-canvas eq-visualizer.js already draws to,
-               just relocated into its own floating card -->
+          <!-- FEATURE: spectrum analyzer — same .eq__visualizer-canvas
+               eq-visualizer.js already draws to, just relocated into
+               its own floating card -->
           <div class="floating-panel" id="panel-spectrum" data-panel="spectrum">
             <section class="eq-meter" aria-hidden="true">
               <canvas class="eq__visualizer-canvas"></canvas>
@@ -323,6 +262,77 @@
           </div>
 
         </div>
+
+        <!-- BOTTOM CHILD SECTION: .player-stage now holds only the
+             controls — anchored to the bottom of .player-panel-inner
+             and sized to fit just this content, instead of forcing a
+             tall min-height the way it did when the 3D model lived
+             inside it. player.js finds the buttons/scrub-input/time
+             span below via a scoped query on the .player element, so
+             everything it needs stays inside that one section
+             regardless of how the rows are grouped visually. -->
+        <div class="player-stage">
+          <section class="player" aria-label="Music player">
+
+            <!-- ROW 1: two inline groups — player controls (transport
+                 buttons) and the feature toggle buttons — with a gap
+                 between them (.player__row--top's own gap, see
+                 player.css). Each group's own internal spacing is
+                 separate: the toggle buttons stay flush against each
+                 other with no gap (see .player-toggles in chrome.css). -->
+            <div class="player__row player__row--top">
+              <div class="player__transport" role="group" aria-label="Playback controls">
+                <button class="btn btn--icon" data-action="prev" aria-label="Previous track">
+                  <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h2v16H6zM20 4L9 12l11 8z"/></svg>
+                </button>
+                <button class="btn btn--icon" data-action="play" aria-label="Play" aria-pressed="false">
+                  <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+                </button>
+                <button class="btn btn--icon" data-action="pause" aria-label="Pause">
+                  <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                </button>
+                <button class="btn btn--icon" data-action="stop" aria-label="Stop">
+                  <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>
+                </button>
+                <button class="btn btn--icon" data-action="next" aria-label="Next track">
+                  <svg class="player__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2v16h-2zM4 4l11 8-11 8z"/></svg>
+                </button>
+              </div>
+
+              <!-- The four panel-toggle buttons (LIST/EQ/VIZ/FILTER).
+                   js/panels.js finds these the same way it always did
+                   — by the shared .panel-toggle class and
+                   [data-panel-toggle] attribute, not by their
+                   container — so this group's position doesn't need
+                   any JS changes. -->
+              <div class="player-toggles" role="group" aria-label="Player features">
+                <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="tracklist" aria-expanded="true" aria-controls="panel-tracklist">LIST</button>
+                <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq">EQ</button>
+                <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum">VIZ</button>
+                <!-- Stub: no panel content/wiring yet, see #panel-filter above. -->
+                <button class="btn player__feature-toggle panel-toggle" type="button" data-panel-toggle="filter" aria-expanded="false" aria-controls="panel-filter">FILTER</button>
+              </div>
+            </div>
+
+            <!-- ROW 2: progress bar — its own row, full width, below
+                 the inline group above rather than bundled inside it. -->
+            <div class="player__row player__row--progress">
+              <div class="player__timeline">
+                <input
+                  class="player__scrub-input"
+                  type="range"
+                  min="0" max="100" value="0" step="0.1"
+                  aria-label="Seek"
+                />
+                <!-- comments.js renders its timestamp markers into this
+                     timeline; left in place unchanged from before. -->
+              </div>
+              <span class="player__time" data-time="total">0:00</span>
+            </div>
+
+          </section>
+        </div>
+
       </main>
     </div>
 
@@ -330,6 +340,7 @@
     <div class="panel panel--comments">
       <section class="container comments" aria-label="Track comments">
         <h3 class="comments__title">Track Comments</h3>
+
 
         <form class="comment-form" novalidate>
           <!-- Honeypot: real visitors never see or fill this (hidden via
@@ -377,7 +388,6 @@
 
       <!-- FOOTER -->
       <footer class="site-footer">
-        <span class="site-footer__brand">Slowvoid Music</span>
         <a href="mailto:booking@slowvoid.com">booking@slowvoid.com</a>
       </footer>
     </div>

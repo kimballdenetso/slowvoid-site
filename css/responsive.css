@@ -82,15 +82,10 @@
   }
 }
 
-@media (min-width: 64rem) {
-  .eq__slider-wrap {
-    height: 128px;
-  }
-
-  .eq__slider {
-    width: 128px; /* pre-rotation length matches the wrap's new height */
-  }
-}
+/* Slider length is fixed at 60px in eq.css at every width now — no
+   desktop-only override here anymore (used to bump it to 128px above
+   64rem, which is what made the bands look inconsistently tall on
+   wide windows). */
 
 /* --------------------------------------------------------------------------
    4. COMMENTS

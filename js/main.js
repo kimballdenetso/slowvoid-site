@@ -156,6 +156,42 @@ function selectTrack(index) {
   loadTrack(index, { autoplay: true });
 }
 
+/**
+ * Keyboard shortcuts for the player's four "extras" toggle buttons
+ * (LIST/EQ/VIZ/FILTER, .player__features in player.css), one letter
+ * each — the first letter of the button's own name. Reuses each
+ * button's real .click(), so this fires the exact same panels.js
+ * (open/close) and eq.js (activate/deactivate) handlers a mouse click
+ * would, rather than duplicating that logic here.
+ *
+ * Ignored while a modifier key is held (so it doesn't fight browser/
+ * OS shortcuts) and while focus is on a form field (so typing "e" in
+ * the comment box or the admin login password doesn't fire it).
+ */
+const PANEL_SHORTCUTS = {
+  l: 'tracklist', // LIST
+  e: 'eq',        // EQ
+  v: 'spectrum',  // VIZ
+  f: 'filter',    // FILTER
+};
+
+function isTypingTarget(el) {
+  return Boolean(el) && (el.matches('input, textarea, select') || el.isContentEditable);
+}
+
+function initPanelShortcuts() {
+  document.addEventListener('keydown', (event) => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (isTypingTarget(event.target)) return;
+
+    const panelName = PANEL_SHORTCUTS[event.key.toLowerCase()];
+    if (!panelName) return;
+
+    const toggleBtn = document.querySelector(`[data-panel-toggle="${panelName}"]`);
+    if (toggleBtn) toggleBtn.click();
+  });
+}
+
 function init() {
   const graph = buildAudioGraph();
 
@@ -178,6 +214,8 @@ function init() {
   }
 
   loadTrack(currentTrackIndex);
+
+  initPanelShortcuts();
 
   document.addEventListener('pointerdown', resumeAudioContextOnce);
   document.addEventListener('keydown', resumeAudioContextOnce);

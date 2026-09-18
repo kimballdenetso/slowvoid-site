@@ -5,8 +5,13 @@
    right .side-panel (see index.html / css/admin.css) and is
    desktop-only: that panel is already display:none below the 900px
    breakpoint (responsive.css), and the DESKTOP_MIN_WIDTH check below
-   is a second guard so the toggle button does nothing on narrow
-   viewports even if something else overrides that CSS.
+   is a second guard.
+
+   There's no toggle button anymore (the header's old "Admin" button
+   was removed as redundant with the sidebar itself) — the panel just
+   reveals itself automatically once the viewport is desktop-width,
+   showing the login form or the editor depending on session state.
+   It hides itself again if the viewport narrows back below desktop. */
 
    Independent module, same pattern as social.js/parallax.js/panels.js.
 
@@ -30,7 +35,6 @@
 const API_BASE = 'api/';
 const DESKTOP_MIN_WIDTH = 900; // matches the .side-panel breakpoint in responsive.css
 
-const adminToggle = document.getElementById('admin-toggle');
 const adminPanel = document.getElementById('admin-panel');
 const loginForm = document.getElementById('admin-login-form');
 const passwordInput = document.getElementById('admin-password');
@@ -56,7 +60,6 @@ function formatTime(seconds) {
 
 async function openPanel() {
   adminPanel.hidden = false;
-  adminToggle.setAttribute('aria-expanded', 'true');
 
   const loggedIn = await checkSession();
   if (loggedIn) {
@@ -69,14 +72,15 @@ async function openPanel() {
 
 function closePanel() {
   adminPanel.hidden = true;
-  adminToggle.setAttribute('aria-expanded', 'false');
 }
 
-function togglePanel() {
-  if (!isDesktop()) return; // editor is desktop-only, see file header
-  if (adminPanel.hidden) {
-    openPanel();
-  } else {
+// Called on load and on every resize — reveals the panel once the
+// viewport is desktop-width, hides it again if it isn't. Replaces the
+// old click-driven togglePanel() now that there's no toggle button.
+function syncPanelToViewport() {
+  if (isDesktop()) {
+    if (adminPanel.hidden) openPanel();
+  } else if (!adminPanel.hidden) {
     closePanel();
   }
 }
@@ -295,8 +299,6 @@ async function deleteComment(commentId, listItemEl) {
    Wiring
    -------------------------------------------------------------------------- */
 
-adminToggle.addEventListener('click', togglePanel);
-
 logoutBtn.addEventListener('click', logout);
 
 loginForm.addEventListener('submit', async (event) => {
@@ -319,11 +321,7 @@ loginForm.addEventListener('submit', async (event) => {
   }
 });
 
-// If the viewport is resized down below desktop while the panel is
-// open, close it — the panel itself would already be visually hidden
-// by responsive.css, but this keeps aria-expanded / focus state honest.
-window.addEventListener('resize', () => {
-  if (!isDesktop() && !adminPanel.hidden) {
-    closePanel();
-  }
-});
+// Reveal (or hide) the panel for the viewport size at load, then keep
+// it in sync as the visitor resizes across the desktop breakpoint.
+syncPanelToViewport();
+window.addEventListener('resize', syncPanelToViewport);

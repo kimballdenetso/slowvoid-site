@@ -45,6 +45,13 @@ function initVisualizer3D() {
 
   // --- Renderer / scene / camera ---------------------------------------
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  // alpha:true above only lets the canvas support transparency — the
+  // renderer still defaults to clearing with alpha:1 (fully opaque)
+  // every frame unless told otherwise, which is why the background
+  // was rendering as solid black. This is what actually makes it see-
+  // through to whatever sits behind the canvas (the page/panel
+  // background, or #panel-spectrum's -1 z-index card behind it).
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();

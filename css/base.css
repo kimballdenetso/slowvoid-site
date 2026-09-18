@@ -57,8 +57,8 @@
   /* ---- Semantic color roles (built from the tokens above; feature
      stylesheets should reference these, not the raw brand colors,
      so a future re-theme only touches this block) ---- */
-  --color-bg: var(--color-teal-dark); /* page background is dark teal — header panel overrides to black, see chrome.css .panel--header */
-  --color-bg-surface: var(--color-teal-dark);
+  --color-bg: var(--color-black); /* page background, behind the .page-shell — see chrome.css .page-shell for the dark-teal wrapper fill and .panel--header for its own black override */
+  /*--color-bg-surface: var(--color-teal-dark);*/
   --color-text: var(--color-off-white);
   --color-text-muted: color-mix(in srgb, var(--color-off-white) 65%, var(--color-slate));
   --color-accent: var(--color-teal);

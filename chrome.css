@@ -127,16 +127,6 @@
   background-color: color-mix(in srgb, var(--color-bg-surface) 55%, transparent);
 }
 
-/* Without this, the rule above (same specificity, and loaded after
-   base.css) was quietly winning over the site-wide .btn:hover fill on
-   every hover, since it isn't itself scoped to :hover — the buttons
-   never visibly filled teal on hover, they just kept this same dim
-   tint the whole time. */
-.player-toggles .panel-toggle:hover {
-  background-color: var(--color-teal);
-  color: var(--color-slate);
-}
-
 /* Floating overlay cards: hidden by default, shown via panels.js
    toggling aria-expanded / .is-open on the trigger button. Now that
    .player-stage (toggle row + player-core) is anchored to the

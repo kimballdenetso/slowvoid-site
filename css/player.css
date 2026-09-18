@@ -30,12 +30,6 @@
            <svg class="player__icon" aria-hidden="true">...</svg>
          </button>
        </div>
-
-       <div class="player__features" role="group" aria-label="Player features">
-         <button class="btn player__feature-toggle panel-toggle" data-panel-toggle="eq" aria-expanded="false" aria-controls="panel-eq">EQ</button>
-         <button class="btn player__feature-toggle panel-toggle" data-panel-toggle="spectrum" aria-expanded="false" aria-controls="panel-spectrum">VIZ</button>
-         <button class="btn player__feature-toggle panel-toggle" data-panel-toggle="filter" aria-expanded="false" aria-controls="panel-filter">FILTER</button>
-       </div>
      </div>
 
      <div class="player__row player__row--progress">
@@ -74,8 +68,9 @@
    -------------------------------------------------------------------------- */
 
 .player {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: max-content; /* column width = the wider of the two rows' own content width — in practice always the controls row, since the progress row's scrub input is absolutely positioned and contributes ~0 to its own max-content size */
+  justify-content: center; /* centers that column within .player's full width */
   gap: var(--space-5);
   width: 100%;
   padding: var(--space-4);
@@ -101,24 +96,25 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-4);
 }
 
 .player__transport,
-.player__features {
+.player-toggles {
   display: flex;
   align-items: stretch;
   flex-shrink: 0;
 }
 
 .player__transport .btn,
-.player__features .btn {
+.player-toggles .btn {
   border: var(--border-width) solid var(--color-border);
   border-radius: 0;
 }
 
 .player__transport .btn + .btn,
-.player__features .btn + .btn {
+.player-toggles .btn + .btn {
   margin-left: calc(var(--border-width) * -1);
 }
 
@@ -153,8 +149,8 @@
 }
 
 .player__feature-toggle[aria-expanded="true"] {
-  background-color: var(--color-accent);
-  color: var(--color-bg-surface);
+  background-color: var(--color-bg-surface);
+  color: var(--color-accent);
 }
 
 /* --------------------------------------------------------------------------

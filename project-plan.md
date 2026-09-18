@@ -332,4 +332,53 @@ Comparing the live working tree against timestamped local backup folders (`diff 
 ### 12.4 Files touched this pass
 `index.html` (EQ header + playlist title restored), `js/eq.js`, `js/main.js`, `js/panels.js`, `css/eq.css`, `css/playlist.css`, `css/responsive.css`. `css/chrome.css`, `css/visualizer3d.css`, `js/dj-filter.js`, `css/dj-filter.css`, `js/spectrum-analyzer.js` confirmed unaffected/unchanged.
 
+---
+
+## 13. Mobile Audio Fix, Site Chrome Cleanup, and Player Panel Full Restructure
+
+Continuing from Section 12, this was one long session covering a mobile playback bug fix, several site-chrome cleanups (header/footer/admin/backgrounds), a round of EQ card refinements, and — the bulk of the pass — a full restructure of the player panel and the 3D visualizer's role in it.
+
+### 13.1 Mobile audio fix
+No sound on mobile despite the transport UI working normally. Root cause: `main.js`'s `resumeAudioContextOnce()` only unlocked the shared `AudioContext` on `pointerdown`/`keydown`. WebKit (iOS/mobile Safari) doesn't treat `pointerdown` as a qualifying user-gesture event for the Web Audio API — only `mousedown`, `keydown`, and `touchend` count — so on mobile the `resume()` call fired but never actually took effect, leaving the context permanently `suspended`. `audioEl.play()` still "succeeded" with no error, so the transport UI looked correct while nothing reached the speakers. Fixed by listening on `mousedown`/`touchend`/`keydown` instead of `pointerdown`/`keydown`.
+
+### 13.2 Site chrome cleanup
+- **Header**: removed the `Admin` toggle button (and its comment block) — redundant with the sidebar login on desktop. `js/admin.js` was updated to match: it no longer looks up `#admin-toggle` at all (that lookup would otherwise throw and kill the whole module, same failure class as Section 12's bug). Instead, `syncPanelToViewport()` runs on load and on every `resize`, opening `#admin-panel` automatically once the viewport crosses the existing 900px desktop breakpoint (showing login or the editor depending on session state) and closing it again below that width.
+- **Header link buttons**: `.site-header__links` grid gap dropped to `0`, with the same overlapping-border technique as the transport block (`nth-child(2n)` pulled left, `nth-child(n+3)` pulled up by one border-width) so the buttons sit flush with a single shared line.
+- **Footer**: dropped the `Slowvoid Music` brand span and its `::before`/`::after` bracket content; `.site-footer a` (the booking `mailto:` link) is now teal (`--color-accent`) at rest, not just on hover.
+- **Page background split**: `--color-bg` (base.css) repointed from dark teal to black — that's now the page/`body` background. `.page-shell` (the wrapper holding the header/player/comments panels) picked up its own explicit `background-color: var(--color-bg-surface)` (dark teal), so that color still shows through the `3px` gaps between panels instead of the new black page behind it. One incidental consumer of the old `--color-bg` value (a semi-transparent tint behind the player's floating toggle buttons) was repointed to `--color-bg-surface` so its look didn't shift along with the page background.
+
+### 13.3 EQ card refinements
+Several rounds of adjustment to `#panel-eq`/`eq.css`, landing on:
+- Fader length fixed at `60px` at every viewport width — `responsive.css` had a `min-width: 64rem` override bumping it back to `128px`, which was the actual cause of "sliders are still tall on a wide window"; that override was removed outright.
+- `.eq` (the section itself, not the outer floating-panel chrome) now carries its own `var(--color-teal)` border, `border-radius: 0`, and `backdrop-filter: blur(10px)`.
+- Padding equalized on all four sides of `.eq` — `.eq__bands` had its own extra `padding-bottom` (for scrollbar clearance) stacking on top of `.eq`'s padding, making it look bottom-heavy; removed.
+- Gap between each band's slider and its frequency label tightened (`--space-2` → `--space-1`).
+- Reset button pulled out of the scrolling band row entirely (`position: absolute; top: 0; right: 0`, anchored to `.eq`), hidden by default (`opacity: 0`) and revealed on `:hover`/`:focus-within` (not hover-only, so it stays reachable via keyboard focus), then scaled to 1/3 size via a scoped `transform: scale(0.333); transform-origin: top right` — scoped to avoid touching the shared `.btn--icon` sizing every transport/toggle button also relies on.
+
+### 13.4 Player panel + 3D visualizer restructure
+The biggest change this pass — the player panel's layered structure was reworked from the "static device-visual base layer" model (Section 11) into three cleanly separated pieces inside `.player-panel-inner`:
+
+1. **`.visualizer3d`** — now the background layer of the *whole panel* (`.player-panel-inner`), not just the old `.player-stage`, filling it via `position: absolute; inset: 0;`.
+2. **`.features`** — a new plain grouping wrapper (no positioning of its own) holding the five floating-panel cards (tracklist, EQ, filter, volume, spectrum) as one referenceable set — the "top child section." Each card kept its own existing `id`/`data-panel` attribute and individual position/size overrides rather than being renamed to a `feature-*` convention; renaming those was requested but deliberately not done, since `eq.js` looks up `#panel-eq` directly and the other panel scripts (`playlist.js`, `dj-filter.js`, `panner-volume.js`, `spectrum-analyzer.js`, `panels.js`) weren't available this pass to confirm they wouldn't break on a rename. **Open item:** send those files over if a full ID/attribute rename is still wanted.
+3. **`.player-stage`** — demoted from "fills most of the panel" to a compact strip anchored to the panel's bottom edge (`position: absolute; bottom: 0;`, no forced `min-height`), sized to fit only its own content.
+
+Inside `.player-stage`, `<section class="player">` now holds two rows instead of the old single transport-and-toggles row:
+- **Row 1** (`.player__row--top`): `.player__transport` (five transport buttons) and `.player-toggles` (LIST/EQ/VIZ/FILTER, renamed from `.player__features`) sit inline as two groups, centered as a pair, with `player.css`'s existing row gap providing the space *between* the groups. The four toggle buttons themselves stay flush with no gap (a leftover `gap: var(--space-2)` on `.player-toggles` — pre-dating this pass — was fighting the border-overlap technique in `player.css` and was zeroed out as part of getting this right).
+- **Row 2** (`.player__row--progress`): the progress/duration bar, now its own row below Row 1 rather than bundled into the same block. `.player` switched from a plain flex column to a single-column CSS grid (`grid-template-columns: max-content; justify-content: center;`) specifically so Row 2 stretches to match Row 1's own content width (which is normally the wider of the two, since the progress row's scrub input is absolutely positioned and contributes ~0 to its own natural width) instead of spanning the full section edge-to-edge.
+
+Because the controls strip flipped from "fills most of the panel" to "compact strip pinned to the bottom," every floating-panel clearance offset that assumed the old geometry needed re-deriving: the default `.floating-panel` rule and `#panel-eq`/`#panel-filter`'s individual overrides now clear the **bottom** of the panel by the controls strip's height (documented inline as `~172px`: `~76px` toggle row + `~96px` player-core row — a codebase-established magic number, not a measured value; needs revisiting if either row's own padding/content height changes) instead of clearing the top. `#panel-tracklist`'s explicit `top: 20%; left: 65%` placement (from a prior pass) was left as-is rather than second-guessed, though it's close enough to the controls strip's new taller footprint that it's worth a visual check.
+
+**3D transparency fix, found near the end of this pass:** `visualizer3d.js`'s `WebGLRenderer` was already constructed with `alpha: true`, but that alone only enables transparency *support* on the canvas — it doesn't change the renderer's default clear alpha, which is `1` (fully opaque). Added an explicit `renderer.setClearColor(0x000000, 0)` right after the renderer is created, which is what actually makes the model's background see-through to whatever sits behind the canvas.
+
+**Feature-toggle button state fixes**, also surfaced near the end of this pass:
+- Hover fill had silently stopped working: `.player-toggles .panel-toggle`'s background-tint rule (chrome.css) has the same CSS specificity as the site-wide `.btn:hover` fill and, being defined later and not itself scoped to `:hover`, was winning the cascade on every hover. Fixed by adding an explicit `.player-toggles .panel-toggle:hover` rule.
+- The active/expanded state (`aria-expanded="true"`) previously filled solid teal with dark text; changed to a dark fill with teal text instead, so the label can stay teal in that state without becoming illegible teal-on-teal.
+
+### 13.5 Keyboard shortcuts
+Added to `main.js`: `L`/`E`/`V`/`F` (first letter of each toggle button's name) trigger a real `.click()` on the matching `[data-panel-toggle]` button, so they run through the exact same `panels.js`/`eq.js` handlers a mouse click would rather than duplicating that logic. Guarded against firing while a modifier key is held or while focus is on a form field (input/textarea/select/contenteditable), so it won't fight typing in the comment box or the admin login password. This lives in `main.js` rather than `panels.js` (which actually owns these buttons) since `panels.js` wasn't available this pass to confirm where it'd fit best — worth moving there for cohesion if/when that file is shared.
+
+### 13.6 Files touched this pass
+`index.html`, `css/base.css`, `css/chrome.css`, `css/player.css`, `css/eq.css`, `css/responsive.css`, `js/main.js`, `js/admin.js`, `js/visualizer3d.js`. `js/player.js`, `js/eq.js`, `css/playlist.css`, and every other file were reviewed but not edited this pass. **Not available this pass** (relevant to the open items above): `js/panels.js`, `js/playlist.js`, `js/dj-filter.js`, `js/panner-volume.js`, `js/spectrum-analyzer.js`, `css/playlist.css`'s current state, `css/dj-filter.css`, `css/visualizer3d.css`, `css/comments.css`.
+
+
 
